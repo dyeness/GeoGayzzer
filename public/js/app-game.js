@@ -277,7 +277,7 @@
       UI.showRoundResult(location, 0, 0, location.lat, location.lng);
     }
 
-    UI.showMultiplayerRoundResults(data.results);
+    UI.showMultiplayerRoundResults(data.results, data.location);
     UI.updateHUD();
     UI.updateInGameLeaderboard(data.results);
     setTimeout(() => GameMap.showMultiplayerGuesses(data.results, nickname), 300);

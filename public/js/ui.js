@@ -120,6 +120,7 @@ const UI = (() => {
     const ptsEl     = document.getElementById('result-points');
     const totalEl   = document.getElementById('result-total-running');
     const btnNext   = document.getElementById('btn-next-round');
+    const linkEl    = document.getElementById('result-panorama-link');
 
     if (nameEl) {
       nameEl.textContent = location.name
@@ -130,23 +131,33 @@ const UI = (() => {
     if (ptsEl)   ptsEl.textContent   = `+${score.toLocaleString()}`;
     if (totalEl) totalEl.textContent = GameState.get('totalScore').toLocaleString();
 
+    // Mapillary link
+    if (linkEl) {
+      if (location.imageId) {
+        const url = `https://www.mapillary.com/app/?pKey=${encodeURIComponent(location.imageId)}`;
+        linkEl.innerHTML =
+          `<a href="${url}" target="_blank" rel="noopener" class="mapillary-link">` +
+          `🌏 Посмотреть панораму на Mapillary</a>`;
+      } else {
+        linkEl.innerHTML = '';
+      }
+    }
+
     if (btnNext) {
       btnNext.textContent = GameState.isGameOver()
         ? '🏆 Показать итоги'
         : 'Следующий раунд →';
     }
 
-    // Show fullscreen result screen
     showScreen('result');
 
-    // Init result map and draw lines after screen is visible
     setTimeout(() => {
       GameMap.initResultMap();
       GameMap.showResult(location.lat, location.lng, guessLat, guessLng);
     }, 250);
   }
 
-  function showMultiplayerRoundResults(results) {
+  function showMultiplayerRoundResults(results, location) {
     const container = document.getElementById('result-multiplayer');
     const list = document.getElementById('result-player-list');
 
@@ -165,6 +176,15 @@ const UI = (() => {
           <span class="result-player-score">${r.score.toLocaleString()} pts (${dist})${stealBadge}</span>
         </li>`;
     }).join('');
+
+    // Mapillary link below the player list
+    const linkEl = document.getElementById('result-panorama-link');
+    if (linkEl && location?.imageId) {
+      const url = `https://www.mapillary.com/app/?pKey=${encodeURIComponent(location.imageId)}`;
+      linkEl.innerHTML =
+        `<a href="${url}" target="_blank" rel="noopener" class="mapillary-link">` +
+        `🌏 Посмотреть панораму на Mapillary</a>`;
+    }
   }
 
   function hideMultiplayerRoundResults() {

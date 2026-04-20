@@ -454,6 +454,7 @@ app.post('/api/auth/register', (req, res) => {
   if (password.length < 4) return res.status(400).json({ error: 'Пароль: минимум 4 символа' });
   const result = registerAccount(nickname, password);
   if (!result.ok) return res.status(409).json({ error: result.error });
+  profiles.initProfile(result.account.nickname); // create profile immediately
   res.json({ nickname: result.account.nickname, token: result.account.token });
 });
 
@@ -462,6 +463,7 @@ app.post('/api/auth/login', (req, res) => {
   if (!nickname || !password) return res.status(400).json({ error: 'Нужны никнейм и пароль' });
   const result = loginAccount(nickname, password);
   if (!result.ok) return res.status(401).json({ error: result.error });
+  profiles.initProfile(result.account.nickname); // ensure profile exists for legacy accounts
   res.json({ nickname: result.account.nickname, token: result.account.token });
 });
 

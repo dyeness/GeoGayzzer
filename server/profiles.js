@@ -73,17 +73,86 @@ function calcMatchXp(matchPlacement, playerCount) {
 /* ── Achievement definitions ─────────────────────────────────────────────── */
 
 const ACHIEVEMENT_DEFS = {
-  accuracy_50:  { name: 'Метко',         icon: '🎯', desc: 'Точность 50%+ в раунде' },
-  accuracy_75:  { name: 'Снайпер',       icon: '🔭', desc: 'Точность 75%+ в раунде' },
-  accuracy_90:  { name: 'Орёл',          icon: '🦅', desc: 'Точность 90%+ в раунде' },
-  accuracy_99:  { name: 'Перфекционист', icon: '💎', desc: 'Точность 99%+ в раунде' },
-  round_first:  { name: 'Лучший раунд', icon: '🥇', desc: '1-е место в раунде' },
-  steal_scored: { name: 'Карманник',     icon: '🗡️', desc: 'Украл очки у соперника' },
-  game_first:   { name: 'Чемпион',       icon: '🏆', desc: '1-е место в матче' },
-  score_5000:   { name: 'Исследователь', icon: '🗺️', desc: '5 000+ очков за матч' },
-  score_10000:  { name: 'Знаток',        icon: '📍', desc: '10 000+ очков за матч' },
-  score_20000:  { name: 'Эксперт',       icon: '🌍', desc: '20 000+ очков за матч' },
-  score_25000:  { name: 'Легенда',       icon: '🌟', desc: '25 000 очков за матч' },
+  // ── Точность (раунд) ──────────────────────────────────────────────────────
+  accuracy_50:  {
+    name: 'На глаз',
+    icon: '🎯',
+    desc: 'Набрал 2 500+ очков в раунде — угадал с точностью от 50%',
+  },
+  accuracy_75:  {
+    name: 'Снайпер',
+    icon: '🔭',
+    desc: 'Набрал 3 750+ очков в раунде — угадал с точностью от 75%',
+  },
+  accuracy_90:  {
+    name: 'Орёл',
+    icon: '🦅',
+    desc: 'Набрал 4 500+ очков в раунде — угадал с точностью от 90%',
+  },
+  accuracy_99:  {
+    name: 'Перфекционист',
+    icon: '💎',
+    desc: 'Набрал 4 950+ очков в раунде — почти идеальное попадание',
+  },
+  close_call:   {
+    name: 'Игла в стоге',
+    icon: '📌',
+    desc: 'Угадал в пределах 1 км от цели — буквально на месте!',
+  },
+  // ── Места (раунд / матч) ─────────────────────────────────────────────────
+  round_first:  {
+    name: 'Первый в раунде',
+    icon: '🥇',
+    desc: 'Занял 1-е место среди всех игроков в раунде',
+  },
+  game_first:   {
+    name: 'Чемпион',
+    icon: '🏆',
+    desc: 'Победил в многопользовательском матче, заняв 1-е место',
+  },
+  game_veteran: {
+    name: 'Ветеран',
+    icon: '🎖️',
+    desc: 'Сыграл 10 и более матчей — настоящий исследователь!',
+  },
+  // ── Кража очков ─────────────────────────────────────────────────────────
+  steal_scored: {
+    name: 'Карманник',
+    icon: '🗡️',
+    desc: 'Украл очки у соперника — ты был ближе к цели',
+  },
+  steal_big:    {
+    name: 'Ограбление',
+    icon: '💰',
+    desc: 'Украл 500+ очков в одном раунде — серьёзный куш',
+  },
+  // ── Счёт за матч ─────────────────────────────────────────────────────────
+  score_5000:   {
+    name: 'Исследователь',
+    icon: '🗺️',
+    desc: 'Набрал 5 000+ очков за матч — неплохое начало',
+  },
+  score_10000:  {
+    name: 'Знаток',
+    icon: '📍',
+    desc: 'Набрал 10 000+ очков за матч — ты точно знаешь мир',
+  },
+  score_20000:  {
+    name: 'Эксперт',
+    icon: '🌍',
+    desc: 'Набрал 20 000+ очков за матч — почти идеальный результат',
+  },
+  score_25000:  {
+    name: 'Легенда',
+    icon: '🌟',
+    desc: 'Набрал все 25 000 очков за матч из 5 раундов — абсолютный максимум!',
+  },
+  // ── Особые ───────────────────────────────────────────────────────────────
+  first_game:   {
+    name: 'Первый шаг',
+    icon: '🎮',
+    desc: 'Завершил свой первый многопользовательский матч',
+  },
 };
 
 /* ── Profile init ────────────────────────────────────────────────────────── */
@@ -107,6 +176,7 @@ function initProfile(nickname) {
       lastGame:     null,
       achievements: [],
     };
+    saveProfiles(); // persist immediately so profile exists from day 1
   }
   return profiles[key];
 }
@@ -152,13 +222,15 @@ function updateAfterRound(roundResults) {
     if (accuracyPct > prof.records.bestAccuracyPct) prof.records.bestAccuracyPct = accuracyPct;
     if ((r.stolen || 0) > prof.records.bestSteals) prof.records.bestSteals = r.stolen;
 
-    // Round achievements (all repeatable)
+    // Round achievements
     if (accuracyPct >= 50) awardAchievement(prof, 'accuracy_50', +accuracyPct.toFixed(1));
     if (accuracyPct >= 75) awardAchievement(prof, 'accuracy_75', +accuracyPct.toFixed(1));
     if (accuracyPct >= 90) awardAchievement(prof, 'accuracy_90', +accuracyPct.toFixed(1));
     if (accuracyPct >= 99) awardAchievement(prof, 'accuracy_99', +accuracyPct.toFixed(1));
+    if (r.distance !== null && r.distance < 1) awardAchievement(prof, 'close_call', +r.distance.toFixed(3));
     if (r.roundPlacement === 1 && r.playerCount > 1) awardAchievement(prof, 'round_first');
-    if ((r.stolen || 0) > 0) awardAchievement(prof, 'steal_scored', r.stolen);
+    if ((r.stolen || 0) > 0)   awardAchievement(prof, 'steal_scored', r.stolen);
+    if ((r.stolen || 0) >= 500) awardAchievement(prof, 'steal_big', r.stolen);
   }
   saveProfiles();
 }
@@ -193,8 +265,9 @@ function updateAfterGame(gameResults) {
     };
 
     // Game achievements
-    if (r.matchPlacement === 1 && r.playerCount > 1)
-      awardAchievement(prof, 'game_first');
+    if (r.matchPlacement === 1 && r.playerCount > 1) awardAchievement(prof, 'game_first');
+    if (prof.gamesPlayed === 1)  awardAchievement(prof, 'first_game');
+    if (prof.gamesPlayed === 10) awardAchievement(prof, 'game_veteran');
     if (r.totalScore >= 5000)  awardAchievement(prof, 'score_5000',  r.totalScore);
     if (r.totalScore >= 10000) awardAchievement(prof, 'score_10000', r.totalScore);
     if (r.totalScore >= 20000) awardAchievement(prof, 'score_20000', r.totalScore);
