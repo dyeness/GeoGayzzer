@@ -96,14 +96,20 @@ const UI = (() => {
     if (countEl) countEl.textContent = `(${players.length}/10)`;
 
     if (listEl) {
-      listEl.innerHTML = players.map((p) => `
+      listEl.innerHTML = players.map((p) => {
+        const prestige = (p.prestige || 0) > 0
+          ? ` <span class="prestige-sm">[${p.prestige}\ud83d\udc8e]</span>`
+          : '';
+        const meta = `<span class="lobby-player-meta">\u0423\u0440. ${p.level ?? 1} &middot; ${p.elo ?? 1000} \u042d\u041b\u041e</span>`;
+        return `
         <li>
           <span class="player-color-dot" style="background:${p.color || '#4fc3f7'}"></span>
-          <span>${escapeHtml(p.nickname)}</span>
-          ${p.isHost ? '<span class="host-badge">Хост</span>' : ''}
-          ${p.isReady ? '<span class="ready-badge">✅</span>' : ''}
-        </li>
-      `).join('');
+          <span class="lobby-player-name">${escapeHtml(p.nickname)}${prestige}</span>
+          ${meta}
+          ${p.isHost ? '<span class="host-badge">\u0425\u043e\u0441\u0442</span>' : ''}
+          ${p.isReady ? '<span class="ready-badge">\u2705</span>' : ''}
+        </li>`;
+      }).join('');
     }
 
     if (startBtn) startBtn.style.display = isHost ? 'block' : 'none';
@@ -226,7 +232,7 @@ const UI = (() => {
     showScreen('final');
   }
 
-  function showMultiplayerLeaderboard(leaderboard) {
+  function showMultiplayerLeaderboard(leaderboard, eloChanges = {}) {
     const container = document.getElementById('final-leaderboard');
     const list = document.getElementById('final-leaderboard-list');
 
@@ -234,8 +240,15 @@ const UI = (() => {
     container.style.display = 'block';
 
     list.innerHTML = leaderboard.map((p, i) => {
-      const medal = ['🥇', '🥈', '🥉'][i] || '';
+      const medal = ['\ud83e\udd47', '\ud83e\udd48', '\ud83e\udd49'][i] || '';
       const profileUrl = '/profile/' + encodeURIComponent(p.nickname);
+      const delta = eloChanges[p.nickname];
+      let eloHtml = '';
+      if (delta !== undefined) {
+        const cls  = delta >= 0 ? 'elo-gain' : 'elo-loss';
+        const sign = delta >= 0 ? '+' : '';
+        eloHtml = `<span class="lb-elo ${cls}">${sign}${delta} \u042d\u041b\u041e</span>`;
+      }
       return `
       <li>
         ${p.color ? `<span class="player-color-dot" style="background:${p.color}"></span>` : ''}
@@ -244,6 +257,7 @@ const UI = (() => {
           <a href="${profileUrl}" class="lb-profile-link">${escapeHtml(p.nickname)}</a>
         </span>
         <span class="lb-score">${p.totalScore.toLocaleString()} pts</span>
+        ${eloHtml}
       </li>`;
     }).join('');
   }

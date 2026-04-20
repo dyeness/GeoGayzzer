@@ -168,6 +168,8 @@ function initProfile(nickname) {
       },
       lastGame:     null,
       achievements: [],
+      elo:          1000,
+      eloChange:    0,
     };
     saveProfiles(); // persist immediately so profile exists from day 1
   }
@@ -251,6 +253,17 @@ function updateAfterRound(roundResults) {
  * }
  */
 function updateAfterGame(gameResults) {
+  // ── Compute ELO changes before mutating profiles (uses current ELO values) ──
+  let eloChanges = {};
+  if (gameResults.length > 1) {
+    const eloPlayers = gameResults.map(r => ({
+      nickname:  r.nickname,
+      elo:       profiles[r.nickname.trim().toLowerCase()]?.elo ?? 1000,
+      placement: r.matchPlacement,
+    }));
+    eloChanges = calcEloChanges(eloPlayers);
+  }
+
   for (const r of gameResults) {
     const key  = r.nickname.trim().toLowerCase();
     const prof = profiles[key] ?? initProfile(r.nickname);
@@ -264,6 +277,11 @@ function updateAfterGame(gameResults) {
     // XP (expanded formula with bonus params)
     prof.totalXp     += calcMatchXp(r.matchPlacement, r.playerCount, allRounds90, bigOpponents);
     prof.gamesPlayed += 1;
+
+    // ELO (multiplayer only, floor at 100)
+    const eloDelta = eloChanges[r.nickname] ?? 0;
+    prof.elo       = Math.max(100, (prof.elo ?? 1000) + eloDelta);
+    prof.eloChange = eloDelta;
 
     // Records
     if (r.totalScore > prof.records.bestTotalScore) prof.records.bestTotalScore = r.totalScore;
@@ -305,6 +323,7 @@ function updateAfterGame(gameResults) {
     delete prof._match;
   }
   saveProfiles();
+  return eloChanges; // returned to caller so it can be emitted to clients
 }
 
 /* ── Public query ────────────────────────────────────────────────────────── */
@@ -324,7 +343,7 @@ function getAllProfiles() {
   return Object.values(profiles).map(p => {
     const { level } = getLevelInfo(p.totalXp);
     const prestige  = getPrestige(level);
-    return { nickname: p.nickname, level, totalXp: p.totalXp, gamesPlayed: p.gamesPlayed, prestige };
+    return { nickname: p.nickname, level, totalXp: p.totalXp, gamesPlayed: p.gamesPlayed, prestige, elo: p.elo ?? 1000 };
   }).sort((a, b) => b.totalXp - a.totalXp);
 }
 

@@ -53,7 +53,7 @@
           <div class="player-row-avatar">${UI.escapeHtml(avatar)}</div>
           <div class="player-row-info">
             <span class="player-row-nick">${UI.escapeHtml(p.nickname)}${prestige}</span>
-            <span class="player-row-sub">Ур. ${p.level} &middot; ${p.gamesPlayed} игр</span>
+            <span class="player-row-sub">Ур. ${p.level} &middot; ${p.gamesPlayed} игр &middot; ${p.elo ?? 1000} ЭЛО</span>
           </div>
           <a href="/profile/${encodeURIComponent(p.nickname)}" class="btn btn-sm btn-outline player-row-link">Профиль →</a>
         </div>`;

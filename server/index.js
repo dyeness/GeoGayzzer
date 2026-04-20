@@ -588,7 +588,7 @@ const io = new Server(server, {
   cors: { origin: '*' },
 });
 
-/** Call after game-over to update all players' profiles. */
+/** Call after game-over to update all players' profiles. Returns ELO changes map. */
 function finalizeGameProfiles(room) {
   const leaderboard = room.getLeaderboard();
   const gameProfileData = leaderboard.map((p, idx) => ({
@@ -598,7 +598,20 @@ function finalizeGameProfiles(room) {
     playerCount:    leaderboard.length,
     rounds:         room.totalRounds,
   }));
-  profiles.updateAfterGame(gameProfileData);
+  return profiles.updateAfterGame(gameProfileData);
+}
+
+/** Enrich player list with profile data (level, prestige, elo) for lobby display. */
+function enrichedPlayerList(room) {
+  return room.getPlayerList().map(p => {
+    const prof = profiles.getProfile(p.nickname);
+    return {
+      ...p,
+      level:    prof?.level    ?? 1,
+      prestige: prof?.prestige ?? 0,
+      elo:      prof?.elo      ?? 1000,
+    };
+  });
 }
 
 io.on('connection', (socket) => {
@@ -621,8 +634,8 @@ io.on('connection', (socket) => {
 
     room.addPlayer(socket.id, nickname, color);
     socket.join(room.code);
-    cb({ success: true, code: room.code, players: room.getPlayerList() });
-    socket.to(room.code).emit('player-joined', { players: room.getPlayerList() });
+    cb({ success: true, code: room.code, players: enrichedPlayerList(room) });
+    socket.to(room.code).emit('player-joined', { players: enrichedPlayerList(room) });
     console.log(`👤 ${nickname} joined room ${room.code}`);
   });
 
@@ -647,8 +660,8 @@ io.on('connection', (socket) => {
       }
       socket.join(room.code);
       const isHost = room.hostId === socket.id;
-      cb({ success: true, code: room.code, players: room.getPlayerList(), status: 'waiting', isHost });
-      socket.to(room.code).emit('player-joined', { players: room.getPlayerList() });
+      cb({ success: true, code: room.code, players: enrichedPlayerList(room), status: 'waiting', isHost });
+      socket.to(room.code).emit('player-joined', { players: enrichedPlayerList(room) });
     } else if (room.status === 'playing') {
       // Game in progress — reconnect existing player by nickname
       const oldEntry = [...room.players.entries()].find(([, p]) => p.nickname === nickname);
@@ -675,7 +688,7 @@ io.on('connection', (socket) => {
         imageId,
         alreadyGuessed: room.roundGuesses.has(socket.id),
       });
-      socket.to(room.code).emit('player-joined', { players: room.getPlayerList() });
+      socket.to(room.code).emit('player-joined', { players: enrichedPlayerList(room) });
       console.log(`🔄 ${nickname} reconnected to room ${room.code}`);
     } else {
       cb({ success: false, error: 'Игра завершена' });
@@ -781,7 +794,7 @@ io.on('connection', (socket) => {
     if (player) player.color = color || '#4fc3f7';
     cb?.({ success: true });
     // Broadcast updated player list so everyone sees new color
-    io.to(room.code).emit('player-joined', { players: room.getPlayerList() });
+    io.to(room.code).emit('player-joined', { players: enrichedPlayerList(room) });
   });
 
   /* Player signals ready for next round (replaces host-only next-round) */
@@ -804,7 +817,7 @@ io.on('connection', (socket) => {
       const nextLoc = room.nextRound();
       if (!nextLoc) {
         // Game over — mark all used this session
-        markUsed((room.resolvedImages || []).map(r => r.id));        finalizeGameProfiles(room);        io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard() });
+        markUsed((room.resolvedImages || []).map(r => r.id));        const eloChanges1 = finalizeGameProfiles(room);        io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard(), eloChanges: eloChanges1 });
       } else {
         const imageId = room.resolvedImages?.[room.currentRound]?.id ?? null;
         io.to(room.code).emit('round-start', {
@@ -826,8 +839,8 @@ io.on('connection', (socket) => {
     const nextLoc = room.nextRound();
     if (!nextLoc) {
       markUsed((room.resolvedImages || []).map(r => r.id));
-      finalizeGameProfiles(room);
-      io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard() });
+      const eloChanges2 = finalizeGameProfiles(room);
+      io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard(), eloChanges: eloChanges2 });
       return cb?.({ success: true, finished: true });
     }
     const imageId = room.resolvedImages?.[room.currentRound]?.id ?? null;

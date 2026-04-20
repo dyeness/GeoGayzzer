@@ -99,6 +99,18 @@
     document.getElementById('meta-games').textContent   = `${prof.gamesPlayed} ${declension(prof.gamesPlayed, 'игра', 'игры', 'игр')}`;
     document.getElementById('meta-rounds').textContent  = `${prof.roundsPlayed} ${declension(prof.roundsPlayed, 'раунд', 'раунда', 'раундов')}`;
     document.getElementById('meta-total-xp').textContent = `${fmt(prof.totalXp)} XP всего`;
+    const eloEl = document.getElementById('meta-elo');
+    if (eloEl) {
+      const eloVal    = prof.elo ?? 1000;
+      const eloChange = prof.eloChange ?? 0;
+      if (eloChange !== 0) {
+        const sign = eloChange > 0 ? '+' : '';
+        const cls  = eloChange > 0 ? 'elo-gain' : 'elo-loss';
+        eloEl.innerHTML = `${fmt(eloVal)} ЭЛО <span class="${cls}">(${sign}${eloChange})</span>`;
+      } else {
+        eloEl.textContent = `${fmt(eloVal)} ЭЛО`;
+      }
+    }
 
     /* Records tab */
     document.getElementById('rec-best-total').textContent    = fmt(prof.records.bestTotalScore) + ' pts';

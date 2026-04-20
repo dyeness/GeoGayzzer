@@ -438,6 +438,52 @@
 }
 .rules-list li strong { color: var(--text-primary); }
 
+/* ── ELO colours ──────────────────────────────────────────────────────────── */
+
+.elo-gain {
+  color: #4caf50;
+  font-weight: 700;
+}
+.elo-loss {
+  color: #f44336;
+  font-weight: 700;
+}
+
+/* ── Scrollable all-achievements tab ─────────────────────────────────────── */
+
+#tab-allachievements {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Lobby player enrichment */
+.lobby-player-name {
+  flex: 1;
+}
+.lobby-player-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin: 0 8px;
+}
+
+/* ELO change badge in final leaderboard */
+.lb-elo {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Prestige small label (lobby, players list) */
+.prestige-sm {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a78bfa;
+}
+
 /* ── Prestige badge ───────────────────────────────────────────────────────── */
 
 .profile-nickname-row {
