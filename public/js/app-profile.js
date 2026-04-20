@@ -52,6 +52,21 @@
     });
   }
 
+  function initInfoModal() {
+    const overlay = document.getElementById('xp-modal-overlay');
+    const closeBtn = document.getElementById('xp-modal-close');
+    const openBtn  = document.getElementById('xp-info-btn');
+    if (!overlay) return;
+    openBtn?.addEventListener('click', () => overlay.classList.remove('hidden'));
+    closeBtn?.addEventListener('click', () => overlay.classList.add('hidden'));
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.add('hidden');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') overlay.classList.add('hidden');
+    });
+  }
+
   /* ── Render ────────────────────────────────────────────────────────────── */
 
   function renderProfile(prof) {
@@ -173,6 +188,7 @@
 
     document.title = `${nickname} — GeoGAYZZER`;
     initTabs();
+    initInfoModal();
 
     try {
       const resp = await fetch(`/api/profile/${encodeURIComponent(nickname)}`);

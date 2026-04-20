@@ -760,8 +760,10 @@ io.on('connection', (socket) => {
         score:          r.score,
         distance:       r.distance,
         stolen:         r.stolen || 0,
+        lostToSteal:    r.lostToSteal || 0,
         roundPlacement: idx + 1,
         playerCount:    results.length,
+        roundNumber:    room.currentRound,
       }));
       profiles.updateAfterRound(roundProfileData);
     }

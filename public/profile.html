@@ -27,6 +27,7 @@
         <h1 class="profile-nickname" id="profile-nickname">—</h1>
         <div class="profile-level-row">
           <span class="level-badge" id="level-badge">Ур. 1</span>
+          <button class="xp-info-btn" id="xp-info-btn" title="Как получать опыт и правила игры">?</button>
           <div class="xp-bar-wrap">
             <div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div>
           </div>
@@ -109,7 +110,55 @@
       <p>Игрок ещё не сыграл ни одного матча.</p>
       <a href="/menu" class="btn btn-primary">На главную</a>
     </div>
+    <!-- ── XP / Rules info modal ─────────────────────────────────── -->
+    <div class="xp-modal-overlay hidden" id="xp-modal-overlay">
+      <div class="xp-modal" role="dialog" aria-modal="true">
+        <button class="xp-modal-close" id="xp-modal-close" aria-label="Закрыть">✕</button>
 
+        <h2>📊 Как получать опыт</h2>
+        <p class="modal-subtitle">Опыт начисляется за каждый раунд и по итогам матча.</p>
+
+        <h3>🇩 За раунд</h3>
+        <table class="xp-table">
+          <thead><tr><th>Событие</th><th>XP</th></tr></thead>
+          <tbody>
+            <tr><td>Очки за раунд</td><td>очки ÷ 8</td></tr>
+            <tr><td>1-е место в раунде</td><td>+200</td></tr>
+            <tr><td>2-е место в раунде</td><td>+100</td></tr>
+            <tr><td>3-е место в раунде</td><td>+60</td></tr>
+            <tr><td>4-е место в раунде</td><td>+35</td></tr>
+            <tr><td>Точность 90%+</td><td>+50</td></tr>
+            <tr><td>Точность 99%+</td><td>+100</td></tr>
+            <tr><td>Угадал в пределах 1 км</td><td>+75</td></tr>
+            <tr><td>Угадал в пределах 100 м</td><td>+200</td></tr>
+            <tr><td>Кража очков в раунде</td><td>+30</td></tr>
+          </tbody>
+        </table>
+
+        <h3>🏆 За матч</h3>
+        <table class="xp-table">
+          <thead><tr><th>Событие</th><th>XP</th></tr></thead>
+          <tbody>
+            <tr><td>Участие в матче</td><td>+50</td></tr>
+            <tr><td>1-е место в матче</td><td>+600</td></tr>
+            <tr><td>2-е место в матче</td><td>+300</td></tr>
+            <tr><td>3-е место в матче</td><td>+180</td></tr>
+            <tr><td>Все раунды матча с 90%+</td><td>+200</td></tr>
+            <tr><td>Победа с 3+ соперниками</td><td>+100</td></tr>
+          </tbody>
+        </table>
+
+        <h3>🎮 Правила игры</h3>
+        <ul class="rules-list">
+          <li>Тебе показывают уличную панораму в случайном месте мира</li>
+          <li>Кликни на карте, чтобы указать местоположение</li>
+          <li>Максимум <strong>5 000 очков</strong> за раунд: чем ближе к цели, тем больше очков</li>
+          <li>Матч длится <strong>5 раундов</strong>, победитель — игрок с наибольшим суммарным счётом</li>
+          <li><strong>Механика кражи:</strong> если двое игроков угадали в пределах <strong>50 км</strong> друг от друга, более точный забирает <strong>20%</strong> очков менее точного</li>
+          <li>Уровень растёт по формуле: ур. N требует ⟨200 × N<sup>1.5</sup>⟩ XP</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <script src="/js/player.js"></script>

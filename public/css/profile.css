@@ -315,3 +315,125 @@
   color: var(--text-secondary);
   margin: 0;
 }
+
+/* ── XP info button ───────────────────────────────────────────────────────── */
+
+.xp-info-btn {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-secondary);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+  transition: all 0.15s;
+}
+.xp-info-btn:hover {
+  border-color: var(--accent, #4fc3f7);
+  color: var(--accent, #4fc3f7);
+}
+
+/* ── XP / Rules modal overlay ─────────────────────────────────────────────── */
+
+.xp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.xp-modal-overlay.hidden { display: none; }
+
+.xp-modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.xp-modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+.xp-modal-close:hover { color: var(--text-primary); }
+
+.xp-modal h2 {
+  font-size: var(--font-lg);
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.xp-modal h3 {
+  font-size: var(--font-md);
+  font-weight: 600;
+  margin: 20px 0 8px;
+  color: var(--text-secondary);
+}
+.modal-subtitle {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  margin: 0 0 16px;
+}
+
+/* XP table */
+.xp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+  margin-bottom: 4px;
+}
+.xp-table th {
+  text-align: left;
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.xp-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.xp-table td:last-child {
+  text-align: right;
+  font-weight: 600;
+  color: var(--accent, #4fc3f7);
+  white-space: nowrap;
+}
+.xp-table tr:last-child td { border-bottom: none; }
+
+/* Rules list */
+.rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rules-list li {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  line-height: 1.5;
+}
+.rules-list li strong { color: var(--text-primary); }

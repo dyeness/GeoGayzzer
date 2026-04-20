@@ -122,7 +122,7 @@ class GameRoom {
         score    = scoringFn.calculateScore(distance);
       }
 
-      entries.push({ socketId, player, guess, distance, baseScore: score, score, stolen: 0 });
+      entries.push({ socketId, player, guess, distance, baseScore: score, score, stolen: 0, lostToSteal: 0 });
     }
 
     // ── Step 2: steal — all pairs within radius ──
@@ -141,6 +141,7 @@ class GameRoom {
             winner.score  += amount;
             winner.stolen += amount;
             loser.score    = Math.max(0, loser.score - amount);
+            loser.lostToSteal += amount;
           }
         }
       }
@@ -148,7 +149,7 @@ class GameRoom {
 
     // ── Step 3: commit to player state ──
     const results = [];
-    for (const { socketId, player, guess, distance, score, stolen } of entries) {
+    for (const { socketId, player, guess, distance, score, stolen, lostToSteal } of entries) {
       player.scores.push(score);
       player.totalScore += score;
       player.guesses.push(guess || null);
@@ -161,6 +162,7 @@ class GameRoom {
         distance,
         score,
         stolen,
+        lostToSteal,
         totalScore: player.totalScore,
       });
     }
