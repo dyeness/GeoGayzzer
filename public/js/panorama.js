@@ -29,6 +29,10 @@ const Panorama = (() => {
     });
     window.addEventListener('resize', () => viewer?.resize());
     viewer.on('bearing', (e) => updateCompass(e.bearing));
+    // Suppress non-fatal viewer errors (e.g. "Param z must be a number" for non-spherical tiles)
+    viewer.on('error', (e) => {
+      console.warn('[Mapillary viewer]', e?.message ?? e);
+    });
   }
 
   /** fetch with AbortController timeout */
@@ -52,37 +56,40 @@ const Panorama = (() => {
   }
 
   /**
-   * Search for a Mapillary panoramic image near the given coordinates.
-   * SEQUENTIAL: tries bboxes from smallest to largest, stops on first result.
-   * limit=10 avoids "Please reduce data" rate-limit errors from Mapillary.
-   * @returns {{ id: string, lat: number, lng: number } | null}
+   * Sequential search for a Mapillary image near lat/lng.
+   * Pass 1: panoramic images only (is_pano=true).
+   * Pass 2: any image (viewer handles flat images gracefully).
+   * Uses limit=1 to avoid Mapillary rate-limit 500 errors.
    */
   async function findImage(lat, lng) {
-    // (2*delta)^2 must stay ≤ 0.010 sq° (Mapillary limit). Max safe delta = 0.04.
-    const deltas = [0.005, 0.01, 0.025, 0.04];
+    const deltas = [0.003, 0.007, 0.02, 0.04];
 
-    for (const delta of deltas) {
+    async function trySearch(delta, extraParams = {}) {
       const bbox = [lng - delta, lat - delta, lng + delta, lat + delta].join(',');
-      const params = new URLSearchParams({ bbox, limit: '10', is_pano: 'true' });
-
+      const params = new URLSearchParams({ bbox, limit: '1', ...extraParams });
       try {
-        const res = await fetchWithTimeout(`/api/mapillary/images?${params}`, 5000);
-        if (!res.ok) continue;
+        const res = await fetchWithTimeout(`/api/mapillary/images?${params}`, 6000);
+        if (!res.ok) return null;
         const data = await res.json();
-        if (!data?.data?.length) continue;
+        if (!data?.data?.length) return null;
+        const img = data.data[0];
+        const coords = img.geometry?.coordinates;   // no computed_geometry \u2014 reduces server load
+        if (!coords) return null;
+        return { id: img.id, lat: coords[1], lng: coords[0] };
+      } catch { return null; }
+    }
 
-        let closest = null, minDist = Infinity;
-        for (const img of data.data) {
-          const coords = img.computed_geometry?.coordinates ?? img.geometry?.coordinates;
-          if (!coords) continue;
-          const [imgLng, imgLat] = coords;
-          const d = Scoring.haversine(lat, lng, imgLat, imgLng);
-          if (d < minDist) { minDist = d; closest = { id: img.id, lat: imgLat, lng: imgLng }; }
-        }
-        if (closest) return closest;
-      } catch (err) {
-        if (err.name !== 'AbortError') console.warn(`findImage delta=${delta}:`, err.message);
-      }
+    // Pass 1: panoramic only
+    for (const delta of deltas) {
+      const r = await trySearch(delta, { is_pano: 'true' });
+      if (r) return r;
+      await new Promise(res => setTimeout(res, 120));
+    }
+    // Pass 2: any image
+    for (const delta of deltas) {
+      const r = await trySearch(delta, {});
+      if (r) return r;
+      await new Promise(res => setTimeout(res, 120));
     }
     return null;
   }

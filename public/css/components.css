@@ -137,6 +137,121 @@
 }
 .modal-actions .btn { flex: 1; }
 
+/* ── Modal wide (room browser) ── */
+.modal-wide { max-width: 600px; }
+
+.join-advanced summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  margin-bottom: 4px;
+}
+.join-advanced .input-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Room list */
+.room-list-container {
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.room-list-empty {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 24px 0;
+  font-size: var(--font-sm);
+}
+.room-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+.room-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.room-host {
+  font-weight: 600;
+  font-size: var(--font-md);
+}
+.room-players {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+/* Panorama: no image placeholder */
+.pano-no-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+}
+
+/* In-game leaderboard panel */
+.game-leaderboard {
+  position: absolute;
+  top: 60px;
+  right: 16px;
+  z-index: 30;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  min-width: 200px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: opacity 200ms;
+}
+.game-leaderboard.hidden { display: none; }
+.game-leaderboard.collapsed .game-lb-list { display: none; }
+.game-lb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-light);
+}
+.game-lb-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+}
+.game-lb-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+.game-lb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: var(--font-sm);
+}
+.game-lb-item.game-lb-leader { color: var(--accent-primary); font-weight: 700; }
+.game-lb-rank { width: 16px; text-align: right; color: var(--text-secondary); }
+.game-lb-nick { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-lb-score { font-weight: 600; font-variant-numeric: tabular-nums; }
+
 /* ── Spinner ── */
 .spinner {
   width: 40px;
@@ -145,4 +260,41 @@
   border-top-color: var(--accent-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+/* ── Resolving-panoramas overlay (shown in lobby while server finds images) ── */
+.resolving-overlay {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+.resolving-overlay p {
+  margin: 0 0 10px;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+.resolving-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border-light);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 10px;
+}
+.resolving-track {
+  height: 6px;
+  background: var(--border-light);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.resolving-bar {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
 }

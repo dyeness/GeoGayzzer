@@ -53,13 +53,18 @@ const App = (() => {
     document.getElementById('btn-join-room')?.addEventListener('click', () => {
       UI.hideJoinError();
       UI.showModal('modal-join');
+      _loadRoomList();
     });
+    document.getElementById('btn-join-refresh')?.addEventListener('click', _loadRoomList);
+    document.getElementById('btn-join-cancel')?.addEventListener('click', () => UI.hideModal('modal-join'));
     document.getElementById('btn-stats')?.addEventListener('click', () => UI.showStats());
     document.getElementById('btn-logout')?.addEventListener('click', handleLogout);
-
-    // ─── Join Modal ───
-    document.getElementById('btn-join-confirm')?.addEventListener('click', handleJoinRoom);
-    document.getElementById('btn-join-cancel')?.addEventListener('click', () => UI.hideModal('modal-join'));
+    document.getElementById('btn-lb-toggle')?.addEventListener('click', () => {
+      const lb = document.getElementById('game-leaderboard');
+      const btn = document.getElementById('btn-lb-toggle');
+      if (lb) lb.classList.toggle('collapsed');
+      if (btn) btn.textContent = lb?.classList.contains('collapsed') ? '+' : '−';
+    });
 
     // ─── Lobby ───
     document.getElementById('btn-start-game')?.addEventListener('click', handleStartMultiplayer);
@@ -117,6 +122,19 @@ const App = (() => {
 
     Network.on('onGameOver', (data) => {
       handleMultiplayerGameOver(data);
+    });
+
+    Network.on('onResolvingPanoramas', (data) => {
+      UI.showResolvingProgress(data.found, data.total);
+    });
+
+    Network.on('onGameError', (data) => {
+      UI.showResolvingProgress(null, null); // hide overlay
+      const msg = data?.message || 'Ошибка при старте игры';
+      alert(msg);
+      // re-enable start button for host
+      const btn = document.getElementById('btn-start-game');
+      if (btn) { btn.disabled = false; btn.textContent = 'Начать игру'; }
     });
   }
 
@@ -184,45 +202,47 @@ const App = (() => {
     GameMap.resetMiniMap();
     UI.updateHUD();
 
-    // Build a pool of candidates: scheduled location first, then extras not too close to used ones
-    const scheduled = locations[round];
-    const usedLocations = locations.slice(0, round);
-    const usedKeys = new Set(usedLocations.map(l => `${l.lat},${l.lng}`));
+    const location = locations[round];
+    if (!location) return;
 
-    const extras = Locations.ALL.filter(l => {
-      const key = `${l.lat},${l.lng}`;
-      if (usedKeys.has(key)) return false;
-      if (scheduled && key === `${scheduled.lat},${scheduled.lng}`) return false;
-      // Skip locations within 500 km of any already-played location
-      return usedLocations.every(u => Scoring.haversine(l.lat, l.lng, u.lat, u.lng) >= 500);
-    });
-    const candidates = [scheduled, ...extras].filter(Boolean);
-
-    let found = null;
     let foundLocation = null;
 
-    for (const candidate of candidates) {
-      if (_roundGen !== myRound) return;  // superseded — a new round started, abort
-      const actual = await Panorama.loadLocation(candidate.lat, candidate.lng);
-      if (_roundGen !== myRound) return;  // superseded after await
-      if (actual) {
-        // Bind the target to the actual panorama position
-        foundLocation = { ...candidate, lat: actual.lat, lng: actual.lng };
-        found = true;
-        break;
+    if (location.imageId) {
+      // Server already resolved the panorama — just load it directly, no bbox search
+      if (_roundGen !== myRound) return;
+      const actual = await Panorama.loadById(location.imageId, location.lat, location.lng);
+      if (_roundGen !== myRound) return;
+      // Use viewer's actual coords (may differ slightly due to moveTo redirect)
+      foundLocation = { ...location, lat: actual?.lat ?? location.lat, lng: actual?.lng ?? location.lng };
+    } else {
+      // Fallback: no imageId (e.g. /api/locations failed, using local pool)
+      // Try the scheduled location, then extras spread across the globe
+      const usedLocations = locations.slice(0, round);
+      const extras = Locations.ALL.filter(l =>
+        usedLocations.every(u => Scoring.haversine(l.lat, l.lng, u.lat, u.lng) >= 500)
+      );
+      const candidates = [location, ...extras].filter(Boolean);
+
+      for (const candidate of candidates) {
+        if (_roundGen !== myRound) return;
+        const actual = await Panorama.loadLocation(candidate.lat, candidate.lng);
+        if (_roundGen !== myRound) return;
+        if (actual) {
+          foundLocation = { ...candidate, lat: actual.lat, lng: actual.lng };
+          break;
+        }
       }
-    }
 
-    if (_roundGen !== myRound) return;  // superseded
+      if (_roundGen !== myRound) return;
 
-    if (!found) {
-      // Absolute fallback: no panoramas anywhere — extremely rare
-      foundLocation = scheduled;
-      const fallbackEl = document.getElementById('panorama-fallback');
-      const coordsEl  = document.getElementById('fallback-coords');
-      if (fallbackEl) fallbackEl.classList.remove('hidden');
-      if (coordsEl)   coordsEl.textContent = `${scheduled.lat.toFixed(5)}, ${scheduled.lng.toFixed(5)}`;
-      UI.showPanoramaLoading(false);
+      if (!foundLocation) {
+        foundLocation = location;
+        const fallbackEl = document.getElementById('panorama-fallback');
+        const coordsEl  = document.getElementById('fallback-coords');
+        if (fallbackEl) fallbackEl.classList.remove('hidden');
+        if (coordsEl)   coordsEl.textContent = `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`;
+        UI.showPanoramaLoading(false);
+      }
     }
 
     // Update the locations array so the result screen shows the right place
@@ -288,12 +308,54 @@ const App = (() => {
   }
 
   /* ══════════════════════════════════════
+     Room Browser
+     ══════════════════════════════════════ */
+
+  async function _loadRoomList() {
+    const serverInput = document.getElementById('join-server-input');
+    const serverAddr = serverInput?.value?.trim();
+    let url = window.location.origin;
+    if (serverAddr) {
+      const addr = serverAddr.includes('://') ? serverAddr : `http://${serverAddr}`;
+      url = /:\d+/.test(addr.replace('://', '')) ? addr : `${addr}:3000`;
+    }
+
+    UI.hideJoinError();
+    UI.showRoomList(null);   // loading state
+
+    try {
+      const rooms = await Network.getRooms(url);
+      UI.showRoomList(rooms, (code) => _joinRoomByCode(code, url));
+    } catch (err) {
+      UI.showRoomList([]);
+      UI.showJoinError('Не удалось подключиться: ' + err.message);
+    }
+  }
+
+  async function _joinRoomByCode(code, serverUrl) {
+    try {
+      UI.hideJoinError();
+      await Network.connect(serverUrl);
+      const result = await Network.joinRoom(code, GameState.get('nickname'));
+
+      GameState.set('mode', 'multiplayer');
+      GameState.set('roomCode', result.code);
+      GameState.set('isHost', false);
+
+      UI.hideModal('modal-join');
+      UI.updateLobby(result.code, result.players, false);
+      UI.showScreen('lobby');
+    } catch (err) {
+      UI.showJoinError(err.message || 'Не удалось войти в комнату');
+    }
+  }
+
+  /* ══════════════════════════════════════
      Multiplayer — Room Management
      ══════════════════════════════════════ */
 
   async function handleCreateRoom() {
     try {
-      // Connect to local server
       await Network.connect(window.location.origin);
       const result = await Network.createRoom(GameState.get('nickname'));
 
@@ -309,54 +371,18 @@ const App = (() => {
     }
   }
 
-  async function handleJoinRoom() {
-    const serverInput = document.getElementById('join-server-input');
-    const codeInput = document.getElementById('join-code-input');
-    const serverAddr = serverInput?.value?.trim();
-    const code = codeInput?.value?.trim()?.toUpperCase();
-
-    if (!code || code.length < 3) {
-      UI.showJoinError('Введи код комнаты');
-      return;
-    }
-
-    // Build server URL
-    let url;
-    if (serverAddr) {
-      // User provided a Radmin VPN address
-      const addr = serverAddr.includes('://') ? serverAddr : `http://${serverAddr}`;
-      url = addr.includes(':') && !addr.includes('://') ? `http://${addr}` : addr;
-      // Ensure port
-      if (!/:\d+/.test(url.replace('://', ''))) {
-        url += ':3000';
-      }
-    } else {
-      url = window.location.origin;
-    }
-
-    try {
-      UI.hideJoinError();
-      await Network.connect(url);
-      const result = await Network.joinRoom(code, GameState.get('nickname'));
-
-      GameState.set('mode', 'multiplayer');
-      GameState.set('roomCode', result.code);
-      GameState.set('isHost', false);
-
-      UI.hideModal('modal-join');
-      UI.updateLobby(result.code, result.players, false);
-      UI.showScreen('lobby');
-    } catch (err) {
-      UI.showJoinError(err.message || 'Не удалось подключиться');
-    }
-  }
+  async function handleJoinRoom() { /* no-op: replaced by room browser */ }
 
   async function handleStartMultiplayer() {
+    const btn = document.getElementById('btn-start-game');
+    if (btn) { btn.disabled = true; btn.textContent = 'Запуск…'; }
     try {
       await Network.startGame();
+      // server now resolving panoramas — progress shown via onResolvingPanoramas
     } catch (err) {
       console.error('Failed to start game:', err);
       alert('Ошибка: ' + err.message);
+      if (btn) { btn.disabled = false; btn.textContent = 'Начать игру'; }
     }
   }
 
@@ -404,24 +430,21 @@ const App = (() => {
     UI.updateHUD();
     UI.updateMultiplayerHUD(0, 0);
 
-    // Load panorama — use server-resolved imageId so ALL players see the SAME panorama
-    const result = data.imageId
-      ? await Panorama.loadById(data.imageId, loc.lat, loc.lng)
-      : await Panorama.loadLocation(loc.lat, loc.lng);
-    if (!result) {
-      // Try any other location that is at least 500 km away
-      const fallbacks = Locations.ALL.filter(l =>
-        Scoring.haversine(l.lat, l.lng, loc.lat, loc.lng) > 500
-      ).sort(() => Math.random() - 0.5);
+    // Show leaderboard panel on first round (or keep visible)
+    if (data.round === 1) {
+      UI.showInGameLeaderboard(data.players ?? []);
+    }
 
-      for (const fb of fallbacks) {
-        const r2 = await Panorama.loadLocation(fb.lat, fb.lng);
-        if (r2) {
-          // Update location so the result map shows the right place
-          const updated = { ...fb, lat: r2.lat, lng: r2.lng };
-          GameState.set('currentLocation', updated);
-          break;
-        }
+    // In multiplayer the server has already resolved the imageId —
+    // clients NEVER make bbox search requests.
+    if (data.imageId) {
+      await Panorama.loadById(data.imageId, loc.lat, loc.lng);
+    } else {
+      // Server couldn't find a panorama; show placeholder message.
+      Panorama.reset();
+      const panoContainer = document.getElementById('panorama-container');
+      if (panoContainer) {
+        panoContainer.innerHTML = '<div class="pano-no-image">⚠️ Панорама не найдена — воспользуйтесь картой</div>';
       }
     }
   }
@@ -449,6 +472,7 @@ const App = (() => {
 
     UI.showMultiplayerRoundResults(data.results);
     UI.updateHUD();
+    UI.updateInGameLeaderboard(data.results);
     // Show other players' guess markers on the result map (after map init at 250ms)
     setTimeout(() => GameMap.showMultiplayerGuesses(data.results, nickname), 300);
   }

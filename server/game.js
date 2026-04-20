@@ -166,4 +166,13 @@ function getRoomByPlayer(socketId) {
   return null;
 }
 
-module.exports = { createRoom, getRoom, deleteRoom, getRoomByPlayer, GameRoom };
+function getAllRooms() {
+  return Array.from(rooms.values()).map(room => ({
+    code: room.code,
+    host: Array.from(room.players.values())[0]?.nickname ?? '?',
+    playerCount: room.players.size,
+    status: room.status,
+  }));
+}
+
+module.exports = { createRoom, getRoom, deleteRoom, getRoomByPlayer, getAllRooms, GameRoom };

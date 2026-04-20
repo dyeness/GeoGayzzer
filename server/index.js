@@ -1,4 +1,4 @@
-/**
+﻿/**
  * GeoGuessr Server
  * Express + Socket.IO for serving the game and handling multiplayer.
  */
@@ -19,7 +19,7 @@ try {
   process.exit(1);
 }
 
-const { createRoom, getRoom, deleteRoom, getRoomByPlayer } = require('./game');
+const { createRoom, getRoom, deleteRoom, getRoomByPlayer, getAllRooms } = require('./game');
 
 /* ───── Scoring helpers (mirrored on server for multiplayer validation) ───── */
 
@@ -40,71 +40,7 @@ const scoring = {
   },
 };
 
-/* ───── Locations pool (same as client — authoritative copy for multiplayer) ───── */
-
-const LOCATIONS = [
-  // Europe
-  { lat: 48.8584, lng: 2.2945,   name: 'Eiffel Tower',       country: 'France' },
-  { lat: 51.5007, lng: -0.1246,  name: 'Big Ben',             country: 'UK' },
-  { lat: 41.8902, lng: 12.4922,  name: 'Colosseum',           country: 'Italy' },
-  { lat: 41.4036, lng: 2.1744,   name: 'Sagrada Familia',     country: 'Spain' },
-  { lat: 41.0086, lng: 28.9802,  name: 'Hagia Sophia',        country: 'Turkey' },
-  { lat: 52.5163, lng: 13.3777,  name: 'Brandenburg Gate',    country: 'Germany' },
-  { lat: 52.3731, lng: 4.8932,   name: 'Dam Square',          country: 'Netherlands' },
-  { lat: 50.0875, lng: 14.4213,  name: 'Old Town Square',     country: 'Czech Republic' },
-  { lat: 37.9715, lng: 23.7267,  name: 'Acropolis',           country: 'Greece' },
-  { lat: 38.6916, lng: -9.2160,  name: 'Belem Tower',         country: 'Portugal' },
-  { lat: 48.2082, lng: 16.3738,  name: 'St. Stephen\'s Cathedral', country: 'Austria' },
-  { lat: 47.5072, lng: 19.0457,  name: 'Parliament',          country: 'Hungary' },
-  { lat: 59.3293, lng: 18.0686,  name: 'Gamla Stan',          country: 'Sweden' },
-  { lat: 59.9065, lng: 10.7548,  name: 'Opera House',         country: 'Norway' },
-  { lat: 55.9486, lng: -3.2008,  name: 'Edinburgh Castle',    country: 'Scotland' },
-  { lat: 53.3438, lng: -6.2546,  name: 'Trinity College',     country: 'Ireland' },
-  { lat: 41.1469, lng: -8.6144,  name: 'Clérigos Tower',      country: 'Portugal' },
-  { lat: 50.8467, lng: 4.3525,   name: 'Grand Place',         country: 'Belgium' },
-  { lat: 37.3861, lng: -5.9927,  name: 'Seville Cathedral',   country: 'Spain' },
-  { lat: 47.3769, lng: 8.5417,   name: 'Old Town Zurich',     country: 'Switzerland' },
-  { lat: 52.2318, lng: 21.0063,  name: 'Palace of Culture',   country: 'Poland' },
-  // Americas
-  { lat: 40.7580, lng: -73.9855, name: 'Times Square',        country: 'USA' },
-  { lat: -22.9711, lng: -43.1822,name: 'Copacabana Beach',    country: 'Brazil' },
-  { lat: -34.6037, lng: -58.3816,name: 'Obelisco',            country: 'Argentina' },
-  { lat: 37.8199, lng: -122.4783,name: 'Golden Gate Bridge',  country: 'USA' },
-  { lat: 19.4326, lng: -99.1332, name: 'Zócalo',              country: 'Mexico' },
-  { lat: 43.6426, lng: -79.3871, name: 'CN Tower',            country: 'Canada' },
-  { lat: 49.2827, lng: -123.1207,name: 'Stanley Park',        country: 'Canada' },
-  { lat: -12.0464, lng: -77.0308,name: 'Plaza Mayor',         country: 'Peru' },
-  { lat: 4.6097,  lng: -74.0817, name: 'La Candelaria',       country: 'Colombia' },
-  { lat: -33.4372, lng: -70.6506,name: 'Plaza de Armas',      country: 'Chile' },
-  { lat: 23.1366, lng: -82.3539, name: 'Malecón',             country: 'Cuba' },
-  // Asia
-  { lat: 35.6595, lng: 139.7004, name: 'Shibuya Crossing',    country: 'Japan' },
-  { lat: 13.7500, lng: 100.4913, name: 'Grand Palace',        country: 'Thailand' },
-  { lat: 1.2814,  lng: 103.8585, name: 'Marina Bay',          country: 'Singapore' },
-  { lat: 25.1972, lng: 55.2744,  name: 'Burj Khalifa',        country: 'UAE' },
-  { lat: 39.9163, lng: 116.3972, name: 'Forbidden City',      country: 'China' },
-  { lat: 31.2304, lng: 121.4737, name: 'The Bund',            country: 'China' },
-  { lat: 37.5796, lng: 126.9770, name: 'Gyeongbokgung',       country: 'South Korea' },
-  { lat: 18.9218, lng: 72.8347,  name: 'Gateway of India',    country: 'India' },
-  { lat: 28.6129, lng: 77.2295,  name: 'India Gate',          country: 'India' },
-  { lat: 10.7769, lng: 106.6980, name: 'Ben Thanh Market',    country: 'Vietnam' },
-  { lat: 3.1569,  lng: 101.7123, name: 'Petronas Towers',     country: 'Malaysia' },
-  { lat: 25.0338, lng: 121.5645, name: 'Taipei 101',          country: 'Taiwan' },
-  { lat: 22.2975, lng: 114.1722, name: 'Tsim Sha Tsui',       country: 'Hong Kong' },
-  // Africa
-  { lat: 29.9792, lng: 31.1342,  name: 'Pyramids of Giza',    country: 'Egypt' },
-  { lat: -33.9249, lng: 18.4241, name: 'Table Mountain',      country: 'South Africa' },
-  { lat: 31.6260, lng: -7.9891,  name: 'Djemaa el-Fna',       country: 'Morocco' },
-  { lat: 33.6073, lng: -7.6320,  name: 'Hassan II Mosque',    country: 'Morocco' },
-  { lat: -1.2921, lng: 36.8219,  name: 'Kenyatta Avenue',     country: 'Kenya' },
-  // Oceania
-  { lat: -33.8568, lng: 151.2153,name: 'Sydney Opera House',  country: 'Australia' },
-  { lat: -37.8183, lng: 144.9671,name: 'Flinders Street',     country: 'Australia' },
-  { lat: -36.8272, lng: 174.7658,name: 'Harbour Bridge',      country: 'New Zealand' },
-  // Russia / CIS
-  { lat: 55.7539, lng: 37.6208,  name: 'Red Square',          country: 'Russia' },
-  { lat: 59.9541, lng: 30.3161,  name: 'Palace Square',       country: 'Russia' },
-];
+/* ───── Geometry helper ───── */
 
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371, toRad = d => d * Math.PI / 180;
@@ -113,77 +49,153 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function pickRandomLocations(count = 5) {
-  const shuffled = [...LOCATIONS].sort(() => Math.random() - 0.5);
-  const picked = [];
-  for (const loc of shuffled) {
-    // Require at least 500 km distance from every already-picked location
-    const tooClose = picked.some(p => haversineKm(loc.lat, loc.lng, p.lat, p.lng) < 500);
-    if (!tooClose) picked.push(loc);
-    if (picked.length === count) break;
-  }
-  return picked;
+/* ───── Coverage zones (regions with good Mapillary street-level data) ───── */
+
+const COVERAGE_ZONES = [
+  { minLat: 47.0, maxLat: 53.5, minLng:  2.0,  maxLng: 15.0  }, // DE/FR/Benelux/CH
+  { minLat: 50.0, maxLat: 58.7, minLng: -8.0,  maxLng:  2.0  }, // UK/Ireland
+  { minLat: 36.0, maxLat: 44.0, minLng: -9.5,  maxLng:  4.0  }, // Iberia
+  { minLat: 37.0, maxLat: 47.5, minLng:  7.0,  maxLng: 18.5  }, // Italy
+  { minLat: 49.0, maxLat: 54.5, minLng: 14.0,  maxLng: 24.0  }, // Poland/Czechia
+  { minLat: 55.0, maxLat: 65.5, minLng:  5.0,  maxLng: 28.0  }, // Scandinavia
+  { minLat: 35.5, maxLat: 42.0, minLng: 23.0,  maxLng: 30.0  }, // Balkans/Greece
+  { minLat: 45.5, maxLat: 49.5, minLng: 14.0,  maxLng: 24.0  }, // Austria/Hungary
+  { minLat: 44.0, maxLat: 56.0, minLng: 24.0,  maxLng: 42.0  }, // Ukraine/Belarus
+  { minLat: 55.0, maxLat: 60.5, minLng: 30.0,  maxLng: 61.0  }, // Russia west
+  { minLat: 36.0, maxLat: 42.0, minLng: 26.0,  maxLng: 45.0  }, // Turkey
+  { minLat: 40.0, maxLat: 47.5, minLng: -90.0, maxLng: -70.0 }, // NE USA
+  { minLat: 33.0, maxLat: 40.0, minLng:-122.0, maxLng: -80.0 }, // S+W USA
+  { minLat: 43.0, maxLat: 50.0, minLng: -95.0, maxLng: -72.0 }, // Canada
+  { minLat: 19.0, maxLat: 32.0, minLng:-117.0, maxLng: -87.0 }, // Mexico
+  { minLat: -34.0,maxLat: -10.0,minLng: -65.0, maxLng: -38.0 }, // Brazil/Argentina
+  { minLat: 33.0, maxLat: 43.5, minLng:130.0,  maxLng: 141.5 }, // Japan
+  { minLat: 34.0, maxLat: 38.5, minLng:126.5,  maxLng: 129.5 }, // South Korea
+  { minLat:  1.0, maxLat: 15.0, minLng: 99.0,  maxLng: 115.0 }, // SE Asia
+  { minLat: -38.5,maxLat: -27.0,minLng:140.0,  maxLng: 153.5 }, // Australia
+  { minLat: -34.5,maxLat: -26.0,minLng: 17.0,  maxLng:  31.5 }, // South Africa
+];
+
+function randomSeed() {
+  const z = COVERAGE_ZONES[Math.floor(Math.random() * COVERAGE_ZONES.length)];
+  return {
+    lat: z.minLat + Math.random() * (z.maxLat - z.minLat),
+    lng: z.minLng + Math.random() * (z.maxLng - z.minLng),
+  };
 }
 
-/** Promisified https GET with 6s timeout. Resolves with parsed JSON or rejects. */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 function mapillaryGet(url) {
+  const https = require('https');
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('timeout')), 6000);
     const req = https.get(url, (res) => {
       let body = '';
-      res.on('data', c => { body += c; });
+      res.on('data', chunk => { body += chunk; });
       res.on('end', () => {
-        clearTimeout(timer);
-        if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}: ${body.slice(0, 120)}`)); return; }
-        try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
+        if (res.statusCode !== 200) {
+          reject(new Error('HTTP ' + res.statusCode + ': ' + body.slice(0, 300)));
+        } else {
+          try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
+        }
       });
     });
-    req.on('error', (e) => { clearTimeout(timer); reject(e); });
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
     req.end();
   });
 }
 
-/**
- * Sequentially search for the closest Mapillary panorama near a coordinate.
- * Tries increasingly large bboxes, stops as soon as one returns results.
- * Sequential (not parallel) to avoid hitting Mapillary rate limits at game start.
- * @returns {Promise<{ id: string, lat: number, lng: number } | null>}
- */
 async function findMapillaryImageOnServer(lat, lng) {
   const token = apiConfig.MAPILLARY_ACCESS_TOKEN;
-  // Deltas chosen so bbox area = (2*delta)^2 stays under Mapillary's 0.010 sq° limit
-  const deltas = [0.005, 0.01, 0.025, 0.04];
+  // delta=0.005° → bbox ~1.1km×1.1km (area=0.0001 sq°) — only size that works.
+  // Larger deltas (0.01+) trigger "reduce data" 500 errors.
+  // Strategy: retry in the same coverage zone with random spots.
+  const DELTA = 0.005;
+  const MAX_ATTEMPTS = 60;
 
-  for (const delta of deltas) {
-    const bbox = [lng - delta, lat - delta, lng + delta, lat + delta].join(',');
+  // Find which coverage zone contains the seed.
+  const zone = COVERAGE_ZONES.find(z =>
+    lat >= z.minLat && lat <= z.maxLat && lng >= z.minLng && lng <= z.maxLng
+  ) || COVERAGE_ZONES[Math.floor(Math.random() * COVERAGE_ZONES.length)];
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const testLat = attempt === 0 ? lat : zone.minLat + Math.random() * (zone.maxLat - zone.minLat);
+    const testLng = attempt === 0 ? lng : zone.minLng + Math.random() * (zone.maxLng - zone.minLng);
+
+    const bbox = [
+      (testLng - DELTA).toFixed(6),
+      (testLat - DELTA).toFixed(6),
+      (testLng + DELTA).toFixed(6),
+      (testLat + DELTA).toFixed(6),
+    ].join(',');
+
     const params = new URLSearchParams({
       access_token: token,
-      fields: 'id,geometry,computed_geometry',
-      limit: '10',
+      fields: 'id,geometry',
+      limit: '1',
       is_pano: 'true',
       bbox,
     });
 
     try {
-      const data = await mapillaryGet(`https://graph.mapillary.com/images?${params}`);
-      if (!data?.data?.length) continue;
-
-      let closest = null, minDist = Infinity;
-      for (const img of data.data) {
-        const coords = img.computed_geometry?.coordinates ?? img.geometry?.coordinates;
-        if (!coords) continue;
-        const [imgLng, imgLat] = coords;
-        const d = scoring.haversine(lat, lng, imgLat, imgLng);
-        if (d < minDist) { minDist = d; closest = { id: img.id, lat: imgLat, lng: imgLng }; }
+      const data = await mapillaryGet('https://graph.mapillary.com/images?' + params);
+      if (!data || !data.data || !data.data.length) {
+        await sleep(150); // small pause between requests to avoid rate limiting
+        continue;
       }
-      if (closest) return closest;
+      const img = data.data[0];
+      const coords = img.geometry && img.geometry.coordinates;
+      if (!coords) continue;
+      console.log('[findMapillaryImage] found after ' + (attempt + 1) + ' attempt(s): ' + img.id);
+      return { id: img.id, lat: coords[1], lng: coords[0] };
     } catch (err) {
-      console.warn(`[findMapillaryImage] delta=${delta} failed: ${err.message}`);
+      const msg = (err.message || '');
+      console.warn('[findMapillaryImage] attempt=' + attempt + ' (' + testLat.toFixed(3) + ',' + testLng.toFixed(3) + '): ' + msg.slice(0, 80));
+      await sleep(msg.indexOf('timeout') !== -1 ? 1000 : 300);
     }
   }
   return null;
 }
 
+async function resolveLocationsForGame(count, onProgress) {
+  if (!count) count = 5;
+
+  const found = [];
+  const usedZoneIndices = new Set();
+  let totalAttempts = 0;
+  const MAX_TOTAL = count * 4; // safety cap on total location searches
+
+  while (found.length < count && totalAttempts < MAX_TOTAL) {
+    totalAttempts++;
+
+    // Pick a zone, prefer unused ones for geographic variety
+    let zoneIdx;
+    if (usedZoneIndices.size < COVERAGE_ZONES.length) {
+      do { zoneIdx = Math.floor(Math.random() * COVERAGE_ZONES.length); }
+      while (usedZoneIndices.has(zoneIdx));
+    } else {
+      zoneIdx = Math.floor(Math.random() * COVERAGE_ZONES.length);
+    }
+    usedZoneIndices.add(zoneIdx);
+    const zone = COVERAGE_ZONES[zoneIdx];
+
+    const seed = {
+      lat: zone.minLat + Math.random() * (zone.maxLat - zone.minLat),
+      lng: zone.minLng + Math.random() * (zone.maxLng - zone.minLng),
+    };
+
+    console.log('[resolveLocations] searching ' + (found.length + 1) + '/' + count + ' (attempt ' + totalAttempts + ')...');
+    const img = await findMapillaryImageOnServer(seed.lat, seed.lng);
+    if (img) {
+      const loc = { lat: img.lat, lng: img.lng, imageId: img.id };
+      found.push(loc);
+      if (onProgress) onProgress(found.length, loc);
+      console.log('[resolveLocations] [' + found.length + '/' + count + '] id=' + img.id);
+    }
+  }
+
+  return found;
+}
 /* ───── Express Setup ───── */
 
 const app = express();
@@ -199,9 +211,21 @@ app.get('/api/config', (_req, res) => {
   });
 });
 
-// Serve locations for solo mode
-app.get('/api/locations', (_req, res) => {
-  res.json(pickRandomLocations(5));
+// Serve locations for solo mode -- resolved server-side (panorama coords = scoring point)
+app.get('/api/locations', async (_req, res) => {
+  try {
+    console.log('[/api/locations] Resolving random panoramas...');
+    const locations = await resolveLocationsForGame(5);
+    res.json(locations);
+  } catch (err) {
+    console.error('/api/locations error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// List open rooms (for room browser)
+app.get('/api/rooms', (_req, res) => {
+  res.json(getAllRooms());
 });
 
 // Proxy Mapillary Graph API — server-side, token never exposed to client
@@ -274,28 +298,43 @@ io.on('connection', (socket) => {
   socket.on('start-game', async (_, cb) => {
     try {
       const room = getRoomByPlayer(socket.id);
-      if (!room) return cb?.({ success: false, error: 'Комната не найдена' });
+      if (!room) return cb?.({ success: false, error: 'Komната не найдена' });
       if (room.hostId !== socket.id) return cb?.({ success: false, error: 'Только хост может начать' });
       if (room.players.size < 1) return cb?.({ success: false, error: 'Недостаточно игроков' });
 
-      const locations = pickRandomLocations(5);
+      cb?.({ success: true });  // ack immediately so host UI unblocks
+
+      // Tell all lobby players we are searching for panoramas
+      io.to(room.code).emit('resolving-panoramas', { total: room.totalRounds, found: 0 });
+      console.log(`[start-game] Resolving ${room.totalRounds} panoramas for room ${room.code}...`);
+
+      const locations = await resolveLocationsForGame(room.totalRounds, (n, loc) => {
+        io.to(room.code).emit('resolving-panoramas', { total: room.totalRounds, found: n });
+        console.log(`  [${n}/${room.totalRounds}] ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)} id=${loc.imageId}`);
+      });
+
+      if (locations.length === 0) {
+        io.to(room.code).emit('game-error', { message: 'Не удалось найти панорамы — попробуйте ещё раз' });
+        return;
+      }
+
+      // Store pre-resolved images on the room so next-round never calls the API again
+      room.resolvedImages = locations.map(l => ({ id: l.imageId }));
+
       const firstLocation = room.startGame(locations);
       room.roundStartTime = Date.now();
 
-      // Resolve the Mapillary image on the server so ALL players load the SAME panorama
-      const image = await findMapillaryImageOnServer(firstLocation.lat, firstLocation.lng);
-
-      cb?.({ success: true });
       io.to(room.code).emit('round-start', {
         round: room.currentRound + 1,
         totalRounds: room.totalRounds,
         location: { lat: firstLocation.lat, lng: firstLocation.lng },
-        imageId: image?.id ?? null,
+        imageId: locations[0].imageId ?? null,
       });
-      console.log(`🎮 Game started in room ${room.code} [imageId=${image?.id ?? 'none'}]`);
+      console.log(`Game started in room ${room.code} [imageId=${locations[0].imageId ?? 'none'}]`);
     } catch (err) {
       console.error('[start-game] error:', err);
-      cb?.({ success: false, error: err.message });
+      const room = getRoomByPlayer(socket.id);
+      if (room) io.to(room.code).emit('game-error', { message: err.message });
     }
   });
 
@@ -338,15 +377,15 @@ io.on('connection', (socket) => {
       return cb?.({ success: true, finished: true });
     }
 
-    // Resolve Mapillary image on the server so all clients load the same panorama
-    const image = await findMapillaryImageOnServer(nextLoc.lat, nextLoc.lng);
+    // Use the pre-resolved imageId -- no API call needed
+    const imageId = room.resolvedImages?.[room.currentRound]?.id ?? null;
 
     cb?.({ success: true, finished: false });
     io.to(room.code).emit('round-start', {
       round: room.currentRound + 1,
       totalRounds: room.totalRounds,
       location: { lat: nextLoc.lat, lng: nextLoc.lng },
-      imageId: image?.id ?? null,
+      imageId,
     });
   });
 

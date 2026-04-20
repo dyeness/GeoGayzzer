@@ -102,6 +102,14 @@ const Network = (() => {
     });
   }
 
+  /** Fetch list of open rooms from the server (no socket needed, plain HTTP). */
+  async function getRooms(serverUrl = window.location.origin) {
+    const url = serverUrl.replace(/\/$/, '');
+    const res = await fetch(`${url}/api/rooms`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
   /* ── Event Listeners ── */
 
   /** Callbacks that the App module can set */
@@ -112,6 +120,8 @@ const Network = (() => {
     onPlayerGuessed: null,
     onRoundResults: null,
     onGameOver: null,
+    onResolvingPanoramas: null,
+    onGameError: null,
   };
 
   function on(event, cb) {
@@ -145,6 +155,14 @@ const Network = (() => {
       callbacks.onGameOver?.(data);
     });
 
+    socket.on('resolving-panoramas', (data) => {
+      callbacks.onResolvingPanoramas?.(data);
+    });
+
+    socket.on('game-error', (data) => {
+      callbacks.onGameError?.(data);
+    });
+
     socket.on('disconnect', () => {
       console.log('Disconnected from server');
     });
@@ -159,6 +177,7 @@ const Network = (() => {
     startGame,
     submitGuess,
     requestNextRound,
+    getRooms,
     on,
   };
 })();

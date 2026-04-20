@@ -264,6 +264,85 @@ const UI = (() => {
     if (el) el.style.display = 'none';
   }
 
+  /** Show/hide the "resolving panoramas" progress overlay in the lobby.
+   * @param {number|null} found  null = hide overlay
+   * @param {number|null} total
+   */
+  function showResolvingProgress(found, total) {
+    const overlay = document.getElementById('resolving-overlay');
+    const bar = document.getElementById('resolving-bar');
+    const text = document.getElementById('resolving-text');
+    if (!overlay) return;
+
+    if (found === null) {
+      overlay.classList.add('hidden');
+      return;
+    }
+
+    overlay.classList.remove('hidden');
+    const pct = total > 0 ? Math.round((found / total) * 100) : 0;
+    if (bar) bar.style.width = `${pct}%`;
+    if (text) text.textContent = `Поиск панорам ${found}/${total}…`;
+  }
+
+  /**
+   * Render the room list inside #room-list-container.
+   * @param {Array|null} rooms  null = loading, [] = empty, [{code,host,playerCount}] = list
+   * @param {function}   onJoin  called with room code when user clicks Join
+   */
+  function showRoomList(rooms, onJoin) {
+    const container = document.getElementById('room-list-container');
+    if (!container) return;
+
+    if (rooms === null) {
+      container.innerHTML = '<p class="room-list-empty">Загрузка...</p>';
+      return;
+    }
+    if (rooms.length === 0) {
+      container.innerHTML = '<p class="room-list-empty">Открытых комнат нет. Создай свою!</p>';
+      return;
+    }
+
+    container.innerHTML = rooms.map(r => `
+      <div class="room-item" data-code="${escapeHtml(r.code)}">
+        <div class="room-item-info">
+          <span class="room-host">${escapeHtml(r.host)}</span>
+          <span class="room-players">${r.playerCount} / 10 игроков</span>
+        </div>
+        <button class="btn btn-sm btn-primary room-join-btn">Войти</button>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.room-join-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.closest('.room-item')?.dataset.code;
+        if (code) onJoin(code);
+      });
+    });
+  }
+
+  /** Show the in-game leaderboard panel (multiplayer) */
+  function showInGameLeaderboard(players) {
+    const panel = document.getElementById('game-leaderboard');
+    if (panel) panel.classList.remove('hidden');
+    if (players?.length) updateInGameLeaderboard(players);
+  }
+
+  /** Update the leaderboard list with round-results data */
+  function updateInGameLeaderboard(results) {
+    const list = document.getElementById('game-lb-list');
+    if (!list) return;
+
+    const sorted = [...results].sort((a, b) => b.totalScore - a.totalScore);
+    list.innerHTML = sorted.map((r, i) => `
+      <li class="game-lb-item${i === 0 ? ' game-lb-leader' : ''}">
+        <span class="game-lb-rank">${i + 1}</span>
+        <span class="game-lb-nick">${escapeHtml(r.nickname)}</span>
+        <span class="game-lb-score">${r.totalScore.toLocaleString()}</span>
+      </li>
+    `).join('');
+  }
+
   /* ── Utilities ── */
 
   function escapeHtml(str) {
@@ -291,6 +370,10 @@ const UI = (() => {
     showStats,
     showJoinError,
     hideJoinError,
+    showRoomList,
+    showResolvingProgress,
+    showInGameLeaderboard,
+    updateInGameLeaderboard,
     escapeHtml,
   };
 })();
