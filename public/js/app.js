@@ -698,4 +698,13 @@ window.dev = {
     if (!window._devPlayers) GameMap.clearLiveMarkers();
     console.log(`[dev.players] Маркеры игроков в реальном времени ${window._devPlayers ? '✅ АКТИВИРОВАНЫ' : '❌ ДЕАКТИВИРОВАНЫ'}`);
   },
+  target() {
+    const loc = GameState.get('currentLocation');
+    if (!loc?.lat || !loc?.lng) {
+      console.warn('[dev.target] Координаты цели недоступны');
+      return;
+    }
+    GameMap.showDevTarget(loc.lat, loc.lng);
+    console.log(`[dev.target] Цель: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`);
+  },
 };

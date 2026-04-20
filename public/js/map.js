@@ -94,6 +94,9 @@ const GameMap = (() => {
 
   function initMiniMap() {
     if (miniMap) {
+      // Remove stale live markers before destroying the map instance
+      _liveMarkers.forEach(m => miniMap.removeLayer(m));
+      _liveMarkers.clear();
       miniMap.remove();
       miniMap = null;
     }
@@ -242,6 +245,8 @@ const GameMap = (() => {
   /** Reset mini-map to default view for a new round */
   function resetMiniMap() {
     clearGuessMarker();
+    // Clear dev target marker
+    if (_devTargetMarker && miniMap) { miniMap.removeLayer(_devTargetMarker); _devTargetMarker = null; }
     if (miniMap) {
       miniMap.setView([20, 0], 2);
     }
@@ -374,6 +379,22 @@ const GameMap = (() => {
     _liveMarkers.clear();
   }
 
+  let _devTargetMarker = null;
+  function showDevTarget(lat, lng) {
+    if (!miniMap) return;
+    if (_devTargetMarker) miniMap.removeLayer(_devTargetMarker);
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="width:14px;height:14px;background:#ff0;border:3px solid #333;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.6);"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+    });
+    _devTargetMarker = L.marker([lat, lng], { icon, interactive: false })
+      .bindTooltip('🎯 Цель', { permanent: true, direction: 'top', offset: [0, -8] })
+      .addTo(miniMap);
+    miniMap.setView([lat, lng], miniMap.getZoom());
+  }
+
   /** Invalidate map sizes (call after showing/hiding containers) */
   function invalidateAll() {
     setTimeout(() => {
@@ -396,6 +417,7 @@ const GameMap = (() => {
     showMultiplayerGuesses,
     updateLiveMarker,
     clearLiveMarkers,
+    showDevTarget,
     invalidateAll,
     invalidateResultMap,
   };
