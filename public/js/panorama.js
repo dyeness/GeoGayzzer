@@ -137,67 +137,84 @@ const Panorama = (() => {
     _hideFallback();
     UI.showPanoramaLoading(true);
 
-    const image = await findImage(lat, lng);
+    try {
+      const image = await findImage(lat, lng);
 
-    // If a newer loadLocation started while we were searching, abort silently
-    if (myGen !== _loadGen) return null;
+      // If a newer loadLocation started while we were searching, abort silently
+      if (myGen !== _loadGen) return null;
 
-    if (!image) {
-      console.warn(`No Mapillary images found near ${lat}, ${lng}`);
+      if (!image) {
+        console.warn(`No Mapillary images found near ${lat}, ${lng}`);
+        if (myGen === _loadGen) UI.showPanoramaLoading(false);
+        return null;
+      }
+
+      GameState.set('mapillaryImageId', image.id);
+
+      // Retry moveTo up to 3 times — Mapillary occasionally returns
+      // "Service temporarily unavailable" on the first attempt
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        if (myGen !== _loadGen) return null;  // superseded
+
+        try {
+          await Promise.race([
+            viewer.moveTo(image.id),
+            timeout(MOVETO_TIMEOUT_MS),
+          ]);
+
+          if (myGen !== _loadGen) return null;  // superseded after moveTo
+
+          // Success — clean up UI state
+          const el = document.getElementById('panorama-container');
+          if (el) el.style.filter = '';  // ALWAYS remove blur on success
+          
+          try {
+            viewer.resize();
+          } catch (e) {
+            console.warn('viewer.resize() failed:', e.message);
+          }
+          
+          const compass = document.getElementById('compass');
+          if (compass) compass.classList.remove('hidden');
+          
+          UI.showPanoramaLoading(false);
+
+          // Get the ACTUAL coordinates from the loaded image (moveTo may redirect
+          // to a neighbouring image, so viewer.getImage() is authoritative)
+          try {
+            const loadedImg = await viewer.getImage();
+            if (loadedImg) {
+              const pt = loadedImg.lngLat ?? loadedImg.originalLngLat;
+              if (pt) return { lat: pt.lat, lng: pt.lng };
+            }
+          } catch { /* fall through to estimated coords */ }
+          return { lat: image.lat, lng: image.lng };
+
+        } catch (err) {
+          if (myGen !== _loadGen) return null;  // superseded during error
+          console.warn(`moveTo attempt ${attempt}/3 failed: ${err.message}`);
+
+          if (attempt < 3) {
+            // Wait before retry, but bail if superseded during the wait
+            await new Promise(r => setTimeout(r, 800 * attempt));
+            if (myGen !== _loadGen) return null;  // superseded during sleep
+          }
+        }
+      }
+
+      // All 3 retries exhausted
+      console.error('Failed to load Mapillary image after 3 attempts');
       if (myGen === _loadGen) UI.showPanoramaLoading(false);
       return null;
-    }
-
-    GameState.set('mapillaryImageId', image.id);
-
-    // Retry moveTo up to 3 times — Mapillary occasionally returns
-    // "Service temporarily unavailable" on the first attempt
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      if (myGen !== _loadGen) return null;  // superseded
-
-      try {
-        await Promise.race([
-          viewer.moveTo(image.id),
-          timeout(MOVETO_TIMEOUT_MS),
-        ]);
-
-        if (myGen !== _loadGen) return null;  // superseded after moveTo
-
-        UI.showPanoramaLoading(false);
-        // Remove the blur we applied in reset()
+    } finally {
+      // CRITICAL: Ensure blur filter is removed even on early return or cancellation
+      if (myGen === _loadGen) {
         const el = document.getElementById('panorama-container');
-        if (el) el.style.filter = '';
-        viewer.resize();
-        const compass = document.getElementById('compass');
-        if (compass) compass.classList.remove('hidden');
-
-        // Get the ACTUAL coordinates from the loaded image (moveTo may redirect
-        // to a neighbouring image, so viewer.getImage() is authoritative)
-        try {
-          const loadedImg = await viewer.getImage();
-          if (loadedImg) {
-            const pt = loadedImg.lngLat ?? loadedImg.originalLngLat;
-            if (pt) return { lat: pt.lat, lng: pt.lng };
-          }
-        } catch { /* fall through to estimated coords */ }
-        return { lat: image.lat, lng: image.lng };
-
-      } catch (err) {
-        if (myGen !== _loadGen) return null;  // superseded during error
-        console.warn(`moveTo attempt ${attempt}/3 failed: ${err.message}`);
-
-        if (attempt < 3) {
-          // Wait before retry, but bail if superseded during the wait
-          await new Promise(r => setTimeout(r, 800 * attempt));
-          if (myGen !== _loadGen) return null;  // superseded during sleep
+        if (el && el.style.filter) {
+          el.style.filter = '';
         }
       }
     }
-
-    // All 3 retries exhausted
-    console.error('Failed to load Mapillary image after 3 attempts');
-    if (myGen === _loadGen) UI.showPanoramaLoading(false);
-    return null;
   }
 
   /**
@@ -218,42 +235,60 @@ const Panorama = (() => {
     _hideFallback();
     UI.showPanoramaLoading(true);
 
-    GameState.set('mapillaryImageId', imageId);
+    try {
+      GameState.set('mapillaryImageId', imageId);
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      if (myGen !== _loadGen) return null;
-      try {
-        await Promise.race([viewer.moveTo(imageId), timeout(MOVETO_TIMEOUT_MS)]);
+      for (let attempt = 1; attempt <= 3; attempt++) {
         if (myGen !== _loadGen) return null;
-
-        UI.showPanoramaLoading(false);
-        const el = document.getElementById('panorama-container');
-        if (el) el.style.filter = '';
-        viewer.resize();
-        const compass = document.getElementById('compass');
-        if (compass) compass.classList.remove('hidden');
-
         try {
-          const loadedImg = await viewer.getImage();
-          if (loadedImg) {
-            const pt = loadedImg.lngLat ?? loadedImg.originalLngLat;
-            if (pt) return { lat: pt.lat, lng: pt.lng };
-          }
-        } catch {}
-        return { lat: fallbackLat, lng: fallbackLng };
-
-      } catch (err) {
-        if (myGen !== _loadGen) return null;
-        console.warn(`loadById attempt ${attempt}/3 failed: ${err.message}`);
-        if (attempt < 3) {
-          await new Promise(r => setTimeout(r, 800 * attempt));
+          await Promise.race([viewer.moveTo(imageId), timeout(MOVETO_TIMEOUT_MS)]);
           if (myGen !== _loadGen) return null;
+
+          // Success — clean up UI state
+          const el = document.getElementById('panorama-container');
+          if (el) el.style.filter = '';  // ALWAYS remove blur on success
+          
+          try {
+            viewer.resize();
+          } catch (e) {
+            console.warn('viewer.resize() failed:', e.message);
+          }
+          
+          const compass = document.getElementById('compass');
+          if (compass) compass.classList.remove('hidden');
+          
+          UI.showPanoramaLoading(false);
+
+          try {
+            const loadedImg = await viewer.getImage();
+            if (loadedImg) {
+              const pt = loadedImg.lngLat ?? loadedImg.originalLngLat;
+              if (pt) return { lat: pt.lat, lng: pt.lng };
+            }
+          } catch {}
+          return { lat: fallbackLat, lng: fallbackLng };
+
+        } catch (err) {
+          if (myGen !== _loadGen) return null;
+          console.warn(`loadById attempt ${attempt}/3 failed: ${err.message}`);
+          if (attempt < 3) {
+            await new Promise(r => setTimeout(r, 800 * attempt));
+            if (myGen !== _loadGen) return null;
+          }
+        }
+      }
+
+      console.warn('loadById: all retries failed, falling back to location search');
+      return loadLocation(fallbackLat, fallbackLng);
+    } finally {
+      // CRITICAL: Ensure blur filter is removed even on early return or cancellation
+      if (myGen === _loadGen) {
+        const el = document.getElementById('panorama-container');
+        if (el && el.style.filter) {
+          el.style.filter = '';
         }
       }
     }
-
-    console.warn('loadById: all retries failed, falling back to location search');
-    return loadLocation(fallbackLat, fallbackLng);
   }
 
   function _showFallback(lat, lng) {
