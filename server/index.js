@@ -6,6 +6,7 @@
 const path = require('path');
 const https = require('https');
 const fs = require('fs');
+const crypto = require('crypto');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -127,9 +128,9 @@ function addToCache(entry) {
 }
 
 /** Pick N random entries from cache that are geographically spread. */
-function pickFromCache(count) {
-  // Exclude panoramas already used this server session
-  const available = panoramaCache.filter(e => !sessionUsed.has(e.id));
+function pickFromCache(count, excludeSet = new Set()) {
+  // Exclude panoramas already used this server session or explicitly excluded
+  const available = panoramaCache.filter(e => !sessionUsed.has(e.id) && !excludeSet.has(e.id));
   if (available.length < count) return null; // not enough fresh ones
   const shuffled = [...available].sort(() => Math.random() - 0.5);
   const picked = [];
@@ -153,6 +154,26 @@ function markUsed(imageIds) {
   if (!Array.isArray(imageIds)) return;
   imageIds.forEach(id => { if (id) sessionUsed.add(id); });
   console.log(`[session] Used panoramas this session: ${sessionUsed.size}`);
+  // Persist play counts
+  imageIds.forEach(id => {
+    if (id) panPlays[id] = (panPlays[id] || 0) + 1;
+  });
+  savePanPlays();
+}
+
+/* ───── Panorama play-count tracking (persists across restarts) ───── */
+
+const PAN_PLAYS_FILE = path.join(__dirname, 'panorama-plays.json');
+let panPlays = {};
+try {
+  if (fs.existsSync(PAN_PLAYS_FILE)) {
+    panPlays = JSON.parse(fs.readFileSync(PAN_PLAYS_FILE, 'utf8'));
+    console.log(`[plays] Loaded play counts for ${Object.keys(panPlays).length} panoramas`);
+  }
+} catch (e) { panPlays = {}; }
+
+function savePanPlays() {
+  try { fs.writeFileSync(PAN_PLAYS_FILE, JSON.stringify(panPlays), 'utf8'); } catch (e) {}
 }
 
 /* ───── Leaderboard (persists across restarts) ───── */
@@ -183,6 +204,60 @@ try {
 
 function saveGameHistory() {
   try { fs.writeFileSync(HISTORY_FILE, JSON.stringify(gameHistory), 'utf8'); } catch (e) {}
+}
+
+/* ───── Accounts (nickname + hashed password, persists across restarts) ───── */
+
+const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
+let accounts = {}; // { nickname_lower: { nickname, passwordHash, salt, token, createdAt } }
+try {
+  if (fs.existsSync(ACCOUNTS_FILE)) {
+    accounts = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8'));
+    console.log(`[accounts] Loaded ${Object.keys(accounts).length} accounts`);
+  }
+} catch (e) { accounts = {}; }
+
+function saveAccounts() {
+  try { fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts), 'utf8'); } catch (e) {}
+}
+
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString('hex');
+}
+
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+/** Returns { ok, error?, account? } */
+function registerAccount(nickname, password) {
+  const key = nickname.trim().toLowerCase();
+  if (accounts[key]) return { ok: false, error: 'Никнейм уже занят' };
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = hashPassword(password, salt);
+  const token = generateToken();
+  accounts[key] = { nickname: nickname.trim(), passwordHash, salt, token, createdAt: new Date().toISOString() };
+  saveAccounts();
+  return { ok: true, account: accounts[key] };
+}
+
+/** Returns { ok, error?, account? } */
+function loginAccount(nickname, password) {
+  const key = nickname.trim().toLowerCase();
+  const acc = accounts[key];
+  if (!acc) return { ok: false, error: 'Аккаунт не найден' };
+  const hash = hashPassword(password, acc.salt);
+  if (hash !== acc.passwordHash) return { ok: false, error: 'Неверный пароль' };
+  // Refresh token on every login
+  acc.token = generateToken();
+  saveAccounts();
+  return { ok: true, account: acc };
+}
+
+/** Verify a token, returns account or null */
+function verifyToken(token) {
+  if (!token) return null;
+  return Object.values(accounts).find(a => a.token === token) ?? null;
 }
 
 let preloading = false;
@@ -265,11 +340,12 @@ async function findMapillaryImageOnServer(lat, lng) {
   return null;
 }
 
-async function resolveLocationsForGame(count, onProgress) {
+async function resolveLocationsForGame(count, onProgress, excludeIds = []) {
   if (!count) count = 5;
+  const excludeSet = new Set(excludeIds);
 
   // Fast path: use cache if we have enough entries
-  const cached = pickFromCache(count);
+  const cached = pickFromCache(count, excludeSet);
   if (cached && cached.length >= count) {
     console.log(`[resolveLocations] Using ${count} cached panoramas`);
     cached.forEach((loc, i) => {
@@ -319,9 +395,18 @@ async function resolveLocationsForGame(count, onProgress) {
 
 const app = express();
 const server = http.createServer(app);
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Page routes (must be before static middleware)
+app.get('/', (_req, res) => res.redirect('/menu'));
+app.get('/login', (_req, res) => res.sendFile('login.html', { root: PUBLIC_DIR }));
+app.get('/menu', (_req, res) => res.sendFile('menu.html', { root: PUBLIC_DIR }));
+app.get('/lobby/:code', (_req, res) => res.sendFile('lobby.html', { root: PUBLIC_DIR }));
+app.get('/game/:code', (_req, res) => res.sendFile('game.html', { root: PUBLIC_DIR }));
+
+app.use(express.static(PUBLIC_DIR));
 
 // Serve API config (non-sensitive tokens that client needs)
 app.get('/api/config', (_req, res) => {
@@ -346,6 +431,25 @@ app.get('/api/locations', async (_req, res) => {
 // List open rooms (for room browser)
 app.get('/api/rooms', (_req, res) => {
   res.json(getAllRooms());
+});
+
+/* ── Auth API ── */
+app.post('/api/auth/register', (req, res) => {
+  const { nickname, password } = req.body || {};
+  if (!nickname || !password) return res.status(400).json({ error: 'Нужны никнейм и пароль' });
+  if (nickname.trim().length < 2 || nickname.trim().length > 20) return res.status(400).json({ error: 'Никнейм: 2–20 символов' });
+  if (password.length < 4) return res.status(400).json({ error: 'Пароль: минимум 4 символа' });
+  const result = registerAccount(nickname, password);
+  if (!result.ok) return res.status(409).json({ error: result.error });
+  res.json({ nickname: result.account.nickname, token: result.account.token });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { nickname, password } = req.body || {};
+  if (!nickname || !password) return res.status(400).json({ error: 'Нужны никнейм и пароль' });
+  const result = loginAccount(nickname, password);
+  if (!result.ok) return res.status(401).json({ error: result.error });
+  res.json({ nickname: result.account.nickname, token: result.account.token });
 });
 
 // Panorama cache status
@@ -490,9 +594,66 @@ io.on('connection', (socket) => {
     console.log(`👤 ${nickname} joined room ${room.code}`);
   });
 
+  /* Rejoin a room after disconnect/page refresh */
+  socket.on('rejoin-room', ({ code, nickname, color }, cb) => {
+    const room = getRoom(code);
+    if (!room) return cb({ success: false, error: 'Комната не найдена' });
+
+    if (room.status === 'waiting') {
+      // Room still in lobby — just add as new player if not already there
+      const existing = [...room.players.values()].find(p => p.nickname === nickname);
+      if (existing) {
+        // Update socket id, clear pending-remove flag
+        const oldId = [...room.players.entries()].find(([, p]) => p.nickname === nickname)?.[0];
+        if (oldId) {
+          room.players.set(socket.id, { ...room.players.get(oldId), socketId: socket.id, _pendingRemove: false });
+          room.players.delete(oldId);
+          if (room.hostId === oldId) room.hostId = socket.id;
+        }
+      } else {
+        room.addPlayer(socket.id, nickname, color);
+      }
+      socket.join(room.code);
+      const isHost = room.hostId === socket.id;
+      cb({ success: true, code: room.code, players: room.getPlayerList(), status: 'waiting', isHost });
+      socket.to(room.code).emit('player-joined', { players: room.getPlayerList() });
+    } else if (room.status === 'playing') {
+      // Game in progress — reconnect existing player by nickname
+      const oldEntry = [...room.players.entries()].find(([, p]) => p.nickname === nickname);
+      if (!oldEntry) return cb({ success: false, error: 'Игрок не найден в комнате' });
+      const [oldId, playerData] = oldEntry;
+      room.players.set(socket.id, { ...playerData, socketId: socket.id, _pendingRemove: false });
+      room.players.delete(oldId);
+      if (room.readySet?.has(oldId)) { room.readySet.delete(oldId); room.readySet.add(socket.id); }
+      if (room.hostId === oldId) room.hostId = socket.id;
+      socket.join(room.code);
+
+      const roundIdx = room.currentRound;
+      const loc = room.getCurrentLocation();
+      const imageId = room.resolvedImages?.[roundIdx]?.id ?? null;
+      cb({
+        success: true,
+        code: room.code,
+        status: 'playing',
+        isHost: room.hostId === socket.id,
+        players: room.getPlayerList(),
+        round: roundIdx + 1,
+        totalRounds: room.totalRounds,
+        location: { lat: loc.lat, lng: loc.lng },
+        imageId,
+        alreadyGuessed: room.roundGuesses.has(socket.id),
+      });
+      socket.to(room.code).emit('player-joined', { players: room.getPlayerList() });
+      console.log(`🔄 ${nickname} reconnected to room ${room.code}`);
+    } else {
+      cb({ success: false, error: 'Игра завершена' });
+    }
+  });
+
   /* Host starts the game */
-  socket.on('start-game', async (_, cb) => {
+  socket.on('start-game', async (data, cb) => {
     try {
+      const excludeIds = Array.isArray(data?.excludeIds) ? data.excludeIds : [];
       const room = getRoomByPlayer(socket.id);
       if (!room) return cb?.({ success: false, error: 'Komната не найдена' });
       if (room.hostId !== socket.id) return cb?.({ success: false, error: 'Только хост может начать' });
@@ -507,7 +668,7 @@ io.on('connection', (socket) => {
       const locations = await resolveLocationsForGame(room.totalRounds, (n, loc) => {
         io.to(room.code).emit('resolving-panoramas', { total: room.totalRounds, found: n });
         console.log(`  [${n}/${room.totalRounds}] ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)} id=${loc.imageId}`);
-      });
+      }, excludeIds);
 
       if (locations.length === 0) {
         io.to(room.code).emit('game-error', { message: 'Не удалось найти панорамы — попробуйте ещё раз' });
@@ -638,17 +799,28 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const room = getRoomByPlayer(socket.id);
     if (room) {
-      room.removePlayer(socket.id);
-      if (room.players.size === 0) {
-        deleteRoom(room.code);
-        console.log(`🗑  Room ${room.code} deleted (empty)`);
-      } else {
-        // Transfer host if needed
-        if (room.hostId === socket.id) {
-          room.hostId = room.players.keys().next().value;
+      // Give the player time to reconnect (page navigation takes 1-4s).
+      // We keep the player in the room for a brief grace period.
+      const player = room.players.get(socket.id);
+      if (player) player._pendingRemove = true;
+
+      const graceMs = room.status === 'playing' ? 10000 : 5000;
+      setTimeout(() => {
+        // If the player rejoined, their entry was moved to a new socket.id key.
+        const still = room.players.get(socket.id);
+        if (still?._pendingRemove) {
+          room.removePlayer(socket.id);
+          if (room.players.size === 0) {
+            deleteRoom(room.code);
+            console.log(`🗑  Room ${room.code} deleted (empty)`);
+          } else {
+            if (room.hostId === socket.id) {
+              room.hostId = room.players.keys().next().value;
+            }
+            io.to(room.code).emit('player-left', { players: room.getPlayerList() });
+          }
         }
-        io.to(room.code).emit('player-left', { players: room.getPlayerList() });
-      }
+      }, graceMs);
     }
     console.log(`💤 Disconnected: ${socket.id}`);
   });
