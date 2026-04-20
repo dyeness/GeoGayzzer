@@ -39,13 +39,25 @@ const App = (() => {
     // Wait for API config to load
     await GameConfig.ready;
 
-    // Check for saved nickname
+    // Check for saved session (token + nickname)
     const savedNick = Player.getNickname();
-    if (savedNick) {
+    const savedToken = Player.getToken();
+    if (savedNick && savedToken) {
       GameState.set('nickname', savedNick);
       UI.updateMenuNickname(savedNick);
-      UI.showScreen('menu');
-      _loadMenuLeaderboard();
+      _restoreSavedColor();
+
+      // Try auto-rejoin if we were in a room before page refresh
+      const pendingRoom = sessionStorage.getItem('gg_room');
+      const pendingColor = sessionStorage.getItem('gg_color');
+      if (pendingRoom) {
+        sessionStorage.removeItem('gg_room');
+        sessionStorage.removeItem('gg_color');
+        await _tryRejoin(pendingRoom, savedNick, pendingColor || Player.getColor() || '#4fc3f7');
+      } else {
+        UI.showScreen('menu');
+        _loadMenuLeaderboard();
+      }
     } else {
       UI.showScreen('login');
     }
@@ -53,22 +65,67 @@ const App = (() => {
     bindEvents();
   }
 
+  async function _tryRejoin(code, nickname, color) {
+    try {
+      await Network.connect(window.location.origin);
+      const data = await Network.rejoinRoom(code, nickname, color);
+      GameState.set('roomCode', data.code);
+      GameState.set('isHost', data.isHost);
+      GameState.set('mode', 'multiplayer');
+
+      if (data.status === 'waiting') {
+        UI.showScreen('lobby');
+        UI.updateLobby(data.players, data.code, data.isHost);
+        UI.showScreen('lobby');
+      } else if (data.status === 'playing') {
+        GameState.set('currentRound', data.round - 1);
+        GameState.set('locations', [{ lat: data.location.lat, lng: data.location.lng, imageId: data.imageId }]);
+        GameState.set('currentGuess', null);
+        UI.showScreen('game');
+        UI.hideMultiplayerRoundResults();
+        GameMap.initMiniMap();
+        GameMap.resetMiniMap();
+        UI.updateHUD();
+        UI.updateMultiplayerHUD(0, 0);
+        if (data.imageId) {
+          await Panorama.loadById(data.imageId, data.location.lat, data.location.lng);
+          if (!data.alreadyGuessed) Panorama.lockInteraction(1500);
+        }
+      }
+    } catch (err) {
+      console.warn('[rejoin] Failed:', err.message);
+      UI.showScreen('menu');
+      _loadMenuLeaderboard();
+    }
+  }
+
   /* ══════════════════════════════════════
      Event Bindings
      ══════════════════════════════════════ */
 
   function bindEvents() {
-    // ─── Login ───
+    // ─── Login / Register ───
     const nicknameInput = document.getElementById('nickname-input');
+    const passwordInput = document.getElementById('password-input');
     const btnLogin = document.getElementById('btn-login');
+    const btnRegister = document.getElementById('btn-register');
 
-    nicknameInput?.addEventListener('input', () => {
-      btnLogin.disabled = nicknameInput.value.trim().length < 2;
-    });
+    function _updateAuthButtons() {
+      const ok = nicknameInput.value.trim().length > 0 && passwordInput.value.length > 0;
+      if (btnLogin) btnLogin.disabled = !ok;
+      if (btnRegister) btnRegister.disabled = !ok;
+    }
+
+    nicknameInput?.addEventListener('input', _updateAuthButtons);
+    passwordInput?.addEventListener('input', _updateAuthButtons);
 
     btnLogin?.addEventListener('click', () => handleLogin());
+    btnRegister?.addEventListener('click', () => handleRegister());
+    passwordInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !btnLogin?.disabled) handleLogin();
+    });
     nicknameInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !btnLogin.disabled) handleLogin();
+      if (e.key === 'Enter') passwordInput?.focus();
     });
 
     // ─── Menu ───
@@ -171,13 +228,6 @@ const App = (() => {
       // handled by color-swatches delegation above
     });
     // Restore saved color swatch on entering lobby
-    function _restoreSavedColor() {
-      const saved = Player.getColor() || '#4fc3f7';
-      GameState.set('playerColor', saved);
-      document.querySelectorAll('.color-swatch').forEach(s => {
-        s.classList.toggle('selected', s.dataset.color === saved);
-      });
-    }
     _restoreSavedColor();
     document.getElementById('btn-start-game')?.addEventListener('click', handleStartMultiplayer);
     document.getElementById('btn-leave-lobby')?.addEventListener('click', handleLeaveLobby);
@@ -262,16 +312,64 @@ const App = (() => {
      Login / Logout
      ══════════════════════════════════════ */
 
-  function handleLogin() {
-    const input = document.getElementById('nickname-input');
-    const nickname = input?.value?.trim();
-    if (!nickname || nickname.length < 2) return;
+  function _showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+  }
+  function _hideAuthError() {
+    const el = document.getElementById('auth-error');
+    if (el) el.style.display = 'none';
+  }
 
-    Player.register(nickname);
+  function _afterAuthSuccess(nickname) {
     GameState.set('nickname', nickname);
     UI.updateMenuNickname(nickname);
+    document.getElementById('nickname-input').value = '';
+    document.getElementById('password-input').value = '';
+    _hideAuthError();
     UI.showScreen('menu');
+    _restoreSavedColor();
     _loadMenuLeaderboard();
+  }
+
+  async function handleLogin() {
+    const nickname = document.getElementById('nickname-input')?.value?.trim();
+    const password = document.getElementById('password-input')?.value;
+    if (!nickname || !password) return;
+    _hideAuthError();
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { _showAuthError(data.error || 'Ошибка входа'); return; }
+      Player.loginSave(data.nickname, data.token);
+      _afterAuthSuccess(data.nickname);
+    } catch {
+      _showAuthError('Нет соединения с сервером');
+    }
+  }
+
+  async function handleRegister() {
+    const nickname = document.getElementById('nickname-input')?.value?.trim();
+    const password = document.getElementById('password-input')?.value;
+    if (!nickname || !password) return;
+    _hideAuthError();
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { _showAuthError(data.error || 'Ошибка регистрации'); return; }
+      Player.loginSave(data.nickname, data.token);
+      _afterAuthSuccess(data.nickname);
+    } catch {
+      _showAuthError('Нет соединения с сервером');
+    }
   }
 
   function handleLogout() {
@@ -344,6 +442,7 @@ const App = (() => {
       if (_roundGen !== myRound) return;
       await Panorama.loadById(location.imageId, location.lat, location.lng);
       if (_roundGen !== myRound) return;
+      Panorama.lockInteraction(1500);
       foundLocation = { ...location };
     } else {
       // Fallback: no imageId (e.g. /api/locations failed, using local pool)
@@ -359,6 +458,7 @@ const App = (() => {
         const actual = await Panorama.loadLocation(candidate.lat, candidate.lng);
         if (_roundGen !== myRound) return;
         if (actual) {
+          Panorama.lockInteraction(1500);
           foundLocation = { ...candidate, lat: actual.lat, lng: actual.lng };
           break;
         }
@@ -474,6 +574,8 @@ const App = (() => {
       GameState.set('mode', 'multiplayer');
       GameState.set('roomCode', result.code);
       GameState.set('isHost', false);
+      sessionStorage.setItem('gg_room', result.code);
+      sessionStorage.setItem('gg_color', color);
 
       UI.hideModal('modal-join');
       UI.updateLobby(result.code, result.players, false);
@@ -496,6 +598,8 @@ const App = (() => {
       GameState.set('mode', 'multiplayer');
       GameState.set('roomCode', result.code);
       GameState.set('isHost', true);
+      sessionStorage.setItem('gg_room', result.code);
+      sessionStorage.setItem('gg_color', color);
 
       UI.updateLobby(result.code, result.players, true);
       UI.showScreen('lobby');
@@ -511,7 +615,9 @@ const App = (() => {
     const btn = document.getElementById('btn-start-game');
     if (btn) { btn.disabled = true; btn.textContent = 'Запуск…'; }
     try {
-      await Network.startGame();
+      const excludeRaw = document.getElementById('exclude-pano-input')?.value || '';
+      const excludeIds = excludeRaw.split(',').map(s => s.trim()).filter(Boolean);
+      await Network.startGame(excludeIds);
       // server now resolving panoramas — progress shown via onResolvingPanoramas
     } catch (err) {
       console.error('Failed to start game:', err);
@@ -524,6 +630,8 @@ const App = (() => {
     Network.disconnect();
     GameState.set('roomCode', null);
     GameState.set('isHost', false);
+    sessionStorage.removeItem('gg_room');
+    sessionStorage.removeItem('gg_color');
     UI.showScreen('menu');
   }
 
@@ -573,6 +681,7 @@ const App = (() => {
     // clients NEVER make bbox search requests.
     if (data.imageId) {
       await Panorama.loadById(data.imageId, loc.lat, loc.lng);
+      Panorama.lockInteraction(1500);
     } else {
       // Server couldn't find a panorama; show placeholder message.
       Panorama.reset();
@@ -617,6 +726,8 @@ const App = (() => {
   }
 
   function handleMultiplayerGameOver(data) {
+    sessionStorage.removeItem('gg_room');
+    sessionStorage.removeItem('gg_color');
     Player.recordGame(
       GameState.get('totalScore'),
       GameState.get('roundScores'),
@@ -674,6 +785,14 @@ const App = (() => {
      ══════════════════════════════════════ */
 
   // Start the app when DOM is ready
+  function _restoreSavedColor() {
+    const saved = Player.getColor() || '#4fc3f7';
+    GameState.set('playerColor', saved);
+    document.querySelectorAll('.color-swatch').forEach(s => {
+      s.classList.toggle('selected', s.dataset.color === saved);
+    });
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
@@ -699,12 +818,19 @@ window.dev = {
     console.log(`[dev.players] Маркеры игроков в реальном времени ${window._devPlayers ? '✅ АКТИВИРОВАНЫ' : '❌ ДЕАКТИВИРОВАНЫ'}`);
   },
   target() {
+    window._devTarget = !window._devTarget;
+    if (!window._devTarget) {
+      GameMap.clearDevTarget();
+      console.log('[dev.target] ❌ ДЕАКТИВИРОВАНА');
+      return;
+    }
     const loc = GameState.get('currentLocation');
     if (!loc?.lat || !loc?.lng) {
+      window._devTarget = false;
       console.warn('[dev.target] Координаты цели недоступны');
       return;
     }
     GameMap.showDevTarget(loc.lat, loc.lng);
-    console.log(`[dev.target] Цель: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`);
+    console.log(`[dev.target] ✅ АКТИВИРОВАНА — ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`);
   },
 };
