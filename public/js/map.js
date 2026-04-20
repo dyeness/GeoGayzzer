@@ -312,22 +312,18 @@ const GameMap = (() => {
   /**
    * Plot every player's guess on the result map as a labelled marker.
    * Call AFTER showResult() — skips the current player (already shown by showResult).
-   * @param {Array}  results    - [{nickname, guess:{lat,lng}, score, distance}, ...]
+   * @param {Array}  results    - [{nickname, color, guess:{lat,lng}, score, distance}, ...]
    * @param {string} myNickname - Current player's nickname
    */
   function showMultiplayerGuesses(results, myNickname) {
     if (!resultMap) return;
 
-    // Colour palette for other players' markers
-    const palette = ['#f39c12', '#9b59b6', '#1abc9c', '#3498db', '#e67e22', '#e91e63'];
-    let colIdx = 0;
-
     for (const result of results) {
-      if (result.nickname === myNickname) continue;  // current player shown by showResult()
+      if (result.nickname === myNickname) continue;
       if (!result.guess) continue;
 
       const { lat, lng } = result.guess;
-      const color = palette[colIdx++ % palette.length];
+      const color = result.color || '#f39c12';
 
       const icon = L.divIcon({
         className: 'custom-marker',
@@ -347,6 +343,35 @@ const GameMap = (() => {
         .addTo(resultMap);
       resultLayers.push(marker);
     }
+  }
+
+  /* ── Live player markers on minimap (dev.players mode) ── */
+  const _liveMarkers = new Map(); // nickname → L.Marker
+
+  function _makeLiveIcon(color) {
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="width:10px;height:10px;background:${color || '#f39c12'};border:2px solid #fff;border-radius:50%;opacity:0.85;"></div>`,
+      iconSize: [10, 10],
+      iconAnchor: [5, 5],
+    });
+  }
+
+  function updateLiveMarker(nickname, color, lat, lng) {
+    if (!miniMap) return;
+    if (_liveMarkers.has(nickname)) {
+      _liveMarkers.get(nickname).setLatLng([lat, lng]);
+    } else {
+      const m = L.marker([lat, lng], { icon: _makeLiveIcon(color), interactive: false })
+        .bindTooltip(nickname, { permanent: false, direction: 'top' })
+        .addTo(miniMap);
+      _liveMarkers.set(nickname, m);
+    }
+  }
+
+  function clearLiveMarkers() {
+    _liveMarkers.forEach(m => { if (miniMap) miniMap.removeLayer(m); });
+    _liveMarkers.clear();
   }
 
   /** Invalidate map sizes (call after showing/hiding containers) */
@@ -369,6 +394,8 @@ const GameMap = (() => {
     initResultMap,
     showResult,
     showMultiplayerGuesses,
+    updateLiveMarker,
+    clearLiveMarkers,
     invalidateAll,
     invalidateResultMap,
   };

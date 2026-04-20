@@ -41,6 +41,17 @@ const Player = (() => {
     return loadPlayer()?.nickname ?? null;
   }
 
+  /** Get the saved color, or null */
+  function getColor() {
+    return loadPlayer()?.color ?? null;
+  }
+
+  /** Save the player's preferred color */
+  function setColor(color) {
+    const existing = loadPlayer() || {};
+    savePlayer({ ...existing, color });
+  }
+
   /** Clear saved player */
   function logout() {
     localStorage.removeItem(STORAGE_KEY);
@@ -110,5 +121,5 @@ const Player = (() => {
     };
   }
 
-  return { register, getNickname, logout, recordGame, getStats };
+  return { register, getNickname, getColor, setColor, logout, recordGame, getStats };
 })();

@@ -45,6 +45,7 @@ const App = (() => {
       GameState.set('nickname', savedNick);
       UI.updateMenuNickname(savedNick);
       UI.showScreen('menu');
+      _loadMenuLeaderboard();
     } else {
       UI.showScreen('login');
     }
@@ -85,9 +86,12 @@ const App = (() => {
 
     // ─── Preload panoramas ───
     document.getElementById('btn-preload')?.addEventListener('click', async () => {
-      // Update count before opening
+      // Update count and populate zones before opening
       try {
-        const s = await fetch('/api/preload/status').then(r => r.json());
+        const [s, zones] = await Promise.all([
+          fetch('/api/preload/status').then(r => r.json()),
+          fetch('/api/preload/zones').then(r => r.json()),
+        ]);
         const el = document.getElementById('preload-count');
         if (el) el.textContent = s.count;
         const badge = document.getElementById('preload-status-badge');
@@ -99,6 +103,16 @@ const App = (() => {
         const stopBtn  = document.getElementById('btn-preload-stop');
         if (startBtn) startBtn.disabled = s.running;
         if (stopBtn)  stopBtn.disabled  = !s.running;
+        // Populate zone selector
+        const sel = document.getElementById('preload-zone-select');
+        if (sel && zones.length && sel.options.length <= 1) {
+          zones.forEach(z => {
+            const opt = document.createElement('option');
+            opt.value = z.index;
+            opt.textContent = z.name;
+            sel.appendChild(opt);
+          });
+        }
       } catch(e) { /* ignore */ }
       UI.showModal('modal-preload');
     });
@@ -106,12 +120,14 @@ const App = (() => {
     document.getElementById('btn-preload-close')?.addEventListener('click', () => UI.hideModal('modal-preload'));
 
     document.getElementById('btn-preload-start')?.addEventListener('click', async () => {
-      await fetch('/api/preload/start', { method: 'POST' });
+      const sel = document.getElementById('preload-zone-select');
+      const zoneVal = sel?.value !== '' ? parseInt(sel.value, 10) : null;
+      const body = JSON.stringify(zoneVal !== null ? { zone: zoneVal } : {});
+      await fetch('/api/preload/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
       document.getElementById('btn-preload-start').disabled = true;
       document.getElementById('btn-preload-stop').disabled  = false;
       const badge = document.getElementById('preload-status-badge');
       if (badge) { badge.textContent = 'Работает'; badge.className = 'preload-badge preload-badge-running'; }
-      // Poll count every 2s while modal open
       _startPreloadPoll();
     });
 
@@ -132,7 +148,37 @@ const App = (() => {
       if (btn) btn.textContent = lb?.classList.contains('collapsed') ? '+' : '−';
     });
 
+    document.getElementById('btn-lb-refresh')?.addEventListener('click', _loadMenuLeaderboard);
+
+    // ─── Color swatches ───
+    document.getElementById('color-swatches')?.addEventListener('click', (e) => {
+      const swatch = e.target.closest('.color-swatch');
+      if (!swatch) return;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      const color = swatch.dataset.color;
+      GameState.set('playerColor', color);
+      Player.setColor(color);
+      // If already in a room, sync color to server immediately
+      if (Network.isConnected() && GameState.get('roomCode')) {
+        Network.updateColor(color).catch(() => {});
+      }
+    });
+
     // ─── Lobby ───
+    // Pre-select saved color on lobby screen
+    document.getElementById('screen-lobby')?.addEventListener('click', (e) => {
+      // handled by color-swatches delegation above
+    });
+    // Restore saved color swatch on entering lobby
+    function _restoreSavedColor() {
+      const saved = Player.getColor() || '#4fc3f7';
+      GameState.set('playerColor', saved);
+      document.querySelectorAll('.color-swatch').forEach(s => {
+        s.classList.toggle('selected', s.dataset.color === saved);
+      });
+    }
+    _restoreSavedColor();
     document.getElementById('btn-start-game')?.addEventListener('click', handleStartMultiplayer);
     document.getElementById('btn-leave-lobby')?.addEventListener('click', handleLeaveLobby);
     document.getElementById('btn-copy-code')?.addEventListener('click', () => {
@@ -180,6 +226,10 @@ const App = (() => {
 
     Network.on('onPlayerGuessed', (data) => {
       UI.updateMultiplayerHUD(data.playersGuessed, data.totalPlayers);
+      // Show live guess marker on minimap if dev.players is active
+      if (window._devPlayers && data.nickname && data.lat != null && data.lng != null) {
+        GameMap.updateLiveMarker(data.nickname, data.color, data.lat, data.lng);
+      }
     });
 
     Network.on('onRoundResults', (data) => {
@@ -192,6 +242,10 @@ const App = (() => {
 
     Network.on('onResolvingPanoramas', (data) => {
       UI.showResolvingProgress(data.found, data.total);
+    });
+
+    Network.on('onReadyUpdate', (data) => {
+      UI.showReadyStatus(data.readyCount, data.total);
     });
 
     Network.on('onGameError', (data) => {
@@ -217,6 +271,7 @@ const App = (() => {
     GameState.set('nickname', nickname);
     UI.updateMenuNickname(nickname);
     UI.showScreen('menu');
+    _loadMenuLeaderboard();
   }
 
   function handleLogout() {
@@ -272,6 +327,7 @@ const App = (() => {
 
     GameState.set('currentGuess', null);
     GameMap.resetMiniMap();
+    GameMap.clearLiveMarkers();
     UI.updateHUD();
 
     const location = locations[round];
@@ -358,28 +414,29 @@ const App = (() => {
   }
 
   function handleNextRound() {
-    // Go back to game screen (result screen → game screen or final)
     const mode = GameState.get('mode');
 
+    if (mode === 'multiplayer') {
+      // Always signal ready — server decides next round or game-over
+      UI.showReadyButton(false);
+      Network.playerReady().catch(console.error);
+      return;
+    }
+
+    // Solo
     if (GameState.isGameOver()) {
       Player.recordGame(
         GameState.get('totalScore'),
         GameState.get('roundScores'),
         mode
       );
+      _submitGameEnd();
       UI.showFinalResults();
       return;
     }
 
-    if (mode === 'multiplayer') {
-      if (GameState.get('isHost')) {
-        Network.requestNextRound().catch(console.error);
-      }
-      // Non-hosts wait for round-start event
-    } else {
-      UI.showScreen('game');
-      startRound().catch(console.error);
-    }
+    UI.showScreen('game');
+    startRound().catch(console.error);
   }
 
   /* ══════════════════════════════════════
@@ -410,8 +467,9 @@ const App = (() => {
   async function _joinRoomByCode(code, serverUrl) {
     try {
       UI.hideJoinError();
+      const color = GameState.get('playerColor') || Player.getColor() || '#4fc3f7';
       await Network.connect(serverUrl);
-      const result = await Network.joinRoom(code, GameState.get('nickname'));
+      const result = await Network.joinRoom(code, GameState.get('nickname'), color);
 
       GameState.set('mode', 'multiplayer');
       GameState.set('roomCode', result.code);
@@ -431,8 +489,9 @@ const App = (() => {
 
   async function handleCreateRoom() {
     try {
+      const color = GameState.get('playerColor') || Player.getColor() || '#4fc3f7';
       await Network.connect(window.location.origin);
-      const result = await Network.createRoom(GameState.get('nickname'));
+      const result = await Network.createRoom(GameState.get('nickname'), color);
 
       GameState.set('mode', 'multiplayer');
       GameState.set('roomCode', result.code);
@@ -525,20 +584,17 @@ const App = (() => {
   }
 
   function handleMultiplayerRoundResults(data) {
-    // data: { results, location, round }
+    // data: { results, location, round, isLastRound }
     const location = data.location;
     const nickname = GameState.get('nickname');
 
-    // Find this player's result
     const myResult = data.results.find((r) => r.nickname === nickname);
     const guess = myResult?.guess;
     const distance = myResult?.distance ?? 0;
     const score = myResult?.score ?? 0;
 
-    // Record locally
     GameState.recordRound(distance, score, guess);
 
-    // Show result
     if (guess) {
       UI.showRoundResult(location, distance, score, guess.lat, guess.lng);
     } else {
@@ -548,8 +604,16 @@ const App = (() => {
     UI.showMultiplayerRoundResults(data.results);
     UI.updateHUD();
     UI.updateInGameLeaderboard(data.results);
-    // Show other players' guess markers on the result map (after map init at 250ms)
     setTimeout(() => GameMap.showMultiplayerGuesses(data.results, nickname), 300);
+
+    // Show ready button for ALL rounds including last
+    UI.showReadyButton(true);
+    UI.showReadyStatus(0, data.results.length);
+    if (data.isLastRound) {
+      // Change button label to indicate final screen
+      const btn = document.getElementById('btn-next-round');
+      if (btn) { btn.textContent = '🏆 Показать итоги'; btn.disabled = false; }
+    }
   }
 
   function handleMultiplayerGameOver(data) {
@@ -558,9 +622,51 @@ const App = (() => {
       GameState.get('roundScores'),
       'multiplayer'
     );
-
+    _submitGameEnd();
     UI.showFinalResults();
     UI.showMultiplayerLeaderboard(data.leaderboard);
+    UI.hideReadyStatus();
+  }
+
+  /* ══════════════════════════════════════
+     Game History / Leaderboard
+     ══════════════════════════════════════ */
+
+  function _submitGameEnd() {
+    const nickname = GameState.get('nickname');
+    const totalScore = GameState.get('totalScore');
+    const mode = GameState.get('mode') || 'solo';
+    const roundScores = GameState.get('roundScores') || [];
+    const locations = GameState.get('locations') || [];
+    const roundGuesses = GameState.get('roundGuesses') || [];
+    const roundDistances = GameState.get('roundDistances') || [];
+
+    fetch('/api/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname, score: totalScore, mode }),
+    }).catch(() => {});
+
+    const rounds = roundScores.map((score, i) => ({
+      imageId: locations[i]?.imageId || null,
+      lat: locations[i]?.lat || null,
+      lng: locations[i]?.lng || null,
+      guess: roundGuesses[i] || null,
+      score,
+      distance: roundDistances[i] || null,
+    }));
+    fetch('/api/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname, mode, totalScore, rounds }),
+    }).catch(() => {});
+  }
+
+  async function _loadMenuLeaderboard() {
+    try {
+      const lb = await fetch('/api/leaderboard').then(r => r.json());
+      UI.showMenuLeaderboard(lb);
+    } catch (e) { /* ignore */ }
   }
 
   /* ══════════════════════════════════════
@@ -576,3 +682,20 @@ const App = (() => {
 
   return { init };
 })();
+
+/* ── Developer console commands ──
+   dev.info    → toggle Mapillary attribution visibility
+   dev.players → toggle live guess markers on minimap
+*/
+window.dev = {
+  info() {
+    document.body.classList.toggle('dev-info-visible');
+    const on = document.body.classList.contains('dev-info-visible');
+    console.log(`[dev.info] Mapillary attribution ${on ? '✅ АКТИВИРОВАНА' : '❌ ДЕАКТИВИРОВАНА'}`);
+  },
+  players() {
+    window._devPlayers = !window._devPlayers;
+    if (!window._devPlayers) GameMap.clearLiveMarkers();
+    console.log(`[dev.players] Маркеры игроков в реальном времени ${window._devPlayers ? '✅ АКТИВИРОВАНЫ' : '❌ ДЕАКТИВИРОВАНЫ'}`);
+  },
+};

@@ -52,20 +52,20 @@ const Network = (() => {
 
   /* ── Room Operations ── */
 
-  function createRoom(nickname) {
+  function createRoom(nickname, color) {
     return new Promise((resolve, reject) => {
       if (!socket) return reject(new Error('Not connected'));
-      socket.emit('create-room', { nickname }, (response) => {
+      socket.emit('create-room', { nickname, color }, (response) => {
         if (response.success) resolve(response);
         else reject(new Error(response.error || 'Failed'));
       });
     });
   }
 
-  function joinRoom(code, nickname) {
+  function joinRoom(code, nickname, color) {
     return new Promise((resolve, reject) => {
       if (!socket) return reject(new Error('Not connected'));
-      socket.emit('join-room', { code: code.toUpperCase(), nickname }, (response) => {
+      socket.emit('join-room', { code: code.toUpperCase(), nickname, color }, (response) => {
         if (response.success) resolve(response);
         else reject(new Error(response.error || 'Failed'));
       });
@@ -88,6 +88,26 @@ const Network = (() => {
       socket.emit('submit-guess', { lat, lng }, (response) => {
         if (response.success) resolve(response);
         else reject(new Error(response.error || 'Failed'));
+      });
+    });
+  }
+
+  function playerReady() {
+    return new Promise((resolve, reject) => {
+      if (!socket) return reject(new Error('Not connected'));
+      socket.emit('player-ready', null, (response) => {
+        if (response?.success) resolve(response);
+        else reject(new Error(response?.error || 'Failed'));
+      });
+    });
+  }
+
+  function updateColor(color) {
+    return new Promise((resolve, reject) => {
+      if (!socket) return reject(new Error('Not connected'));
+      socket.emit('update-color', { color }, (response) => {
+        if (response?.success) resolve(response);
+        else reject(new Error(response?.error || 'Failed'));
       });
     });
   }
@@ -122,6 +142,7 @@ const Network = (() => {
     onGameOver: null,
     onResolvingPanoramas: null,
     onGameError: null,
+    onReadyUpdate: null,
   };
 
   function on(event, cb) {
@@ -163,6 +184,10 @@ const Network = (() => {
       callbacks.onGameError?.(data);
     });
 
+    socket.on('ready-update', (data) => {
+      callbacks.onReadyUpdate?.(data);
+    });
+
     socket.on('disconnect', () => {
       console.log('Disconnected from server');
     });
@@ -176,6 +201,8 @@ const Network = (() => {
     joinRoom,
     startGame,
     submitGuess,
+    playerReady,
+    updateColor,
     requestNextRound,
     getRooms,
     on,

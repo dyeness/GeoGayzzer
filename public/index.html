@@ -68,6 +68,14 @@
       <div class="menu-footer">
         <button id="btn-logout" class="btn btn-text">Сменить никнейм</button>
       </div>
+      <!-- Global leaderboard -->
+      <div id="menu-leaderboard" class="menu-leaderboard">
+        <div class="menu-lb-header">
+          <h3>🏆 Лучшие результаты</h3>
+          <button id="btn-lb-refresh" class="btn btn-text btn-sm" title="Обновить">↻</button>
+        </div>
+        <ol id="menu-lb-list" class="menu-lb-list"><li class="menu-lb-empty">Загрузка...</li></ol>
+      </div>
     </div>
   </div>
 
@@ -88,6 +96,20 @@
       <div class="lobby-players">
         <h3>Игроки <span id="lobby-player-count">(0/10)</span></h3>
         <ul id="lobby-player-list"></ul>
+      </div>
+      <!-- Color picker -->
+      <div class="color-picker-row">
+        <span class="color-picker-label">Цвет:</span>
+        <div class="color-swatches" id="color-swatches">
+          <button class="color-swatch selected" data-color="#4fc3f7" style="background:#4fc3f7"></button>
+          <button class="color-swatch" data-color="#ef5350" style="background:#ef5350"></button>
+          <button class="color-swatch" data-color="#66bb6a" style="background:#66bb6a"></button>
+          <button class="color-swatch" data-color="#ffa726" style="background:#ffa726"></button>
+          <button class="color-swatch" data-color="#ab47bc" style="background:#ab47bc"></button>
+          <button class="color-swatch" data-color="#26c6da" style="background:#26c6da"></button>
+          <button class="color-swatch" data-color="#d4e157" style="background:#d4e157"></button>
+          <button class="color-swatch" data-color="#ff7043" style="background:#ff7043"></button>
+        </div>
       </div>
       <div class="lobby-actions">
         <button id="btn-start-game" class="btn btn-primary btn-lg" style="display:none;">Начать игру</button>
@@ -273,6 +295,10 @@
           <h4>Результаты раунда</h4>
           <ul id="result-player-list"></ul>
         </div>
+        <!-- Ready status (multiplayer) -->
+        <div id="ready-status" class="ready-status" style="display:none;">
+          <span id="ready-count-text">0/0 готовы</span>
+        </div>
         <button id="btn-next-round" class="btn btn-primary btn-lg result-next-btn">Следующий раунд →</button>
       </div>
     </div>
@@ -324,6 +350,12 @@
       <div class="preload-status">
         <span>В базе: <strong id="preload-count">0</strong> панорам</span>
         <span id="preload-status-badge" class="preload-badge preload-badge-idle">Остановлено</span>
+      </div>
+      <div class="preload-zone-row">
+        <label for="preload-zone-select">Регион:</label>
+        <select id="preload-zone-select" class="input input-sm">
+          <option value="">Все регионы</option>
+        </select>
       </div>
       <div class="modal-actions">
         <button id="btn-preload-start" class="btn btn-primary">▶ Начать</button>

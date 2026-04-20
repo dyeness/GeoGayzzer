@@ -11,7 +11,7 @@ function generateRoomCode() {
 }
 
 class GameRoom {
-  constructor(code, hostId, hostNickname) {
+  constructor(code, hostId, hostNickname, hostColor) {
     this.code = code;
     this.hostId = hostId;
     this.players = new Map();
@@ -20,16 +20,18 @@ class GameRoom {
     this.totalRounds = 5;
     this.status = 'waiting'; // waiting | playing | finished
     this.roundGuesses = new Map();
+    this.readySet = new Set();  // players who clicked "Ready" between rounds
     this.roundStartTime = null;
-    this.roundTimeLimit = 120_000; // 2 minutes per round
-    this.addPlayer(hostId, hostNickname);
+    this.roundTimeLimit = 120_000;
+    this.addPlayer(hostId, hostNickname, hostColor);
   }
 
   /* ───── Player management ───── */
 
-  addPlayer(socketId, nickname) {
+  addPlayer(socketId, nickname, color = '#4fc3f7') {
     this.players.set(socketId, {
       nickname,
+      color: color || '#4fc3f7',
       scores: [],
       totalScore: 0,
       guesses: [],
@@ -39,15 +41,34 @@ class GameRoom {
   removePlayer(socketId) {
     this.players.delete(socketId);
     this.roundGuesses.delete(socketId);
+    this.readySet.delete(socketId);
   }
 
   getPlayerList() {
     return Array.from(this.players.entries()).map(([id, p]) => ({
       id,
       nickname: p.nickname,
+      color: p.color,
       totalScore: p.totalScore,
       isHost: id === this.hostId,
+      isReady: this.readySet.has(id),
     }));
+  }
+
+  /* ───── Ready system ───── */
+
+  /** Mark a player ready. Returns true when ALL players are ready. */
+  markReady(socketId) {
+    this.readySet.add(socketId);
+    return this.readySet.size >= this.players.size;
+  }
+
+  clearReady() {
+    this.readySet.clear();
+  }
+
+  getReadyCount() {
+    return this.readySet.size;
   }
 
   /* ───── Game flow ───── */
@@ -56,7 +77,7 @@ class GameRoom {
     this.locations = locations;
     this.currentRound = 0;
     this.status = 'playing';
-    // Reset all player scores
+    this.readySet.clear();
     for (const p of this.players.values()) {
       p.scores = [];
       p.totalScore = 0;
@@ -102,6 +123,7 @@ class GameRoom {
       results.push({
         socketId,
         nickname: player.nickname,
+        color: player.color,
         guess,
         distance,
         score,
@@ -117,6 +139,7 @@ class GameRoom {
   /** Advance to the next round or end the game */
   nextRound() {
     this.roundGuesses.clear();
+    this.readySet.clear();
     this.currentRound += 1;
     if (this.currentRound >= this.totalRounds) {
       this.status = 'finished';
@@ -132,6 +155,7 @@ class GameRoom {
       .map(([id, p]) => ({
         id,
         nickname: p.nickname,
+        color: p.color,
         totalScore: p.totalScore,
         scores: p.scores,
       }))
@@ -143,10 +167,10 @@ class GameRoom {
 
 const rooms = new Map();
 
-function createRoom(hostId, hostNickname) {
+function createRoom(hostId, hostNickname, hostColor) {
   let code = generateRoomCode();
   while (rooms.has(code)) code = generateRoomCode();
-  const room = new GameRoom(code, hostId, hostNickname);
+  const room = new GameRoom(code, hostId, hostNickname, hostColor);
   rooms.set(code, room);
   return room;
 }

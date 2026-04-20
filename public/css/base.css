@@ -36,3 +36,8 @@ input, select, button { font-family: inherit; }
 ::-webkit-scrollbar-track { background: var(--bg-secondary); }
 ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* Hide Mapillary attribution by default — restore with dev.info in console */
+.mapillary-attribution-container { display: none !important; }
+.dev-info-visible .mapillary-attribution-container { display: block !important; }
+

@@ -98,8 +98,10 @@ const UI = (() => {
     if (listEl) {
       listEl.innerHTML = players.map((p) => `
         <li>
+          <span class="player-color-dot" style="background:${p.color || '#4fc3f7'}"></span>
           <span>${escapeHtml(p.nickname)}</span>
           ${p.isHost ? '<span class="host-badge">Хост</span>' : ''}
+          ${p.isReady ? '<span class="ready-badge">✅</span>' : ''}
         </li>
       `).join('');
     }
@@ -205,6 +207,7 @@ const UI = (() => {
 
     list.innerHTML = leaderboard.map((p) => `
       <li>
+        ${p.color ? `<span class="player-color-dot" style="background:${p.color}"></span>` : ''}
         <span class="lb-name">${escapeHtml(p.nickname)}</span>
         <span class="lb-score">${p.totalScore.toLocaleString()} pts</span>
       </li>
@@ -337,7 +340,52 @@ const UI = (() => {
     });
   }
 
-  /** Show the in-game leaderboard panel (multiplayer) */
+  /* ── Menu Leaderboard ── */
+
+  function showMenuLeaderboard(entries) {
+    const list = document.getElementById('menu-lb-list');
+    if (!list) return;
+    if (!entries || entries.length === 0) {
+      list.innerHTML = '<li class="menu-lb-empty">Пока нет результатов</li>';
+      return;
+    }
+    list.innerHTML = entries.slice(0, 10).map((e, i) => {
+      const modeIcon = e.mode === 'multiplayer' ? '👥' : '🎯';
+      return `<li>
+        <span class="menu-lb-rank">${i + 1}.</span>
+        <span class="menu-lb-name">${escapeHtml(e.nickname)}</span>
+        <span class="menu-lb-mode">${modeIcon}</span>
+        <span class="menu-lb-score">${e.score.toLocaleString()}</span>
+      </li>`;
+    }).join('');
+  }
+
+  /* ── Ready Status (result screen) ── */
+
+  function showReadyStatus(readyCount, total) {
+    const el = document.getElementById('ready-status');
+    const txt = document.getElementById('ready-count-text');
+    if (el) el.style.display = 'block';
+    if (txt) txt.textContent = `${readyCount}/${total} готовы`;
+  }
+
+  function hideReadyStatus() {
+    const el = document.getElementById('ready-status');
+    if (el) el.style.display = 'none';
+  }
+
+  /** Show/hide and enable/disable the "Ready" button on the result screen. */
+  function showReadyButton(enabled) {
+    const btn = document.getElementById('btn-next-round');
+    if (!btn) return;
+    const mode = GameState.get('mode');
+    if (mode === 'multiplayer') {
+      btn.textContent = enabled ? '✅ Готов' : '⏳ Ожидание...';
+      btn.disabled = !enabled;
+    }
+  }
+
+  /* ── In-game leaderboard with color ── */
   function showInGameLeaderboard(players) {
     const panel = document.getElementById('game-leaderboard');
     if (panel) panel.classList.remove('hidden');
@@ -353,6 +401,7 @@ const UI = (() => {
     list.innerHTML = sorted.map((r, i) => `
       <li class="game-lb-item${i === 0 ? ' game-lb-leader' : ''}">
         <span class="game-lb-rank">${i + 1}</span>
+        ${r.color ? `<span class="game-lb-dot" style="background:${r.color}"></span>` : ''}
         <span class="game-lb-nick">${escapeHtml(r.nickname)}</span>
         <span class="game-lb-score">${r.totalScore.toLocaleString()}</span>
       </li>
@@ -383,6 +432,10 @@ const UI = (() => {
     showFinalResults,
     showMultiplayerLeaderboard,
     hideMultiplayerLeaderboard,
+    showMenuLeaderboard,
+    showReadyStatus,
+    hideReadyStatus,
+    showReadyButton,
     showStats,
     showJoinError,
     hideJoinError,

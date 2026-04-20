@@ -53,27 +53,27 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 /* ───── Coverage zones (regions with good Mapillary street-level data) ───── */
 
 const COVERAGE_ZONES = [
-  { minLat: 47.0, maxLat: 53.5, minLng:  2.0,  maxLng: 15.0  }, // DE/FR/Benelux/CH
-  { minLat: 50.0, maxLat: 58.7, minLng: -8.0,  maxLng:  2.0  }, // UK/Ireland
-  { minLat: 36.0, maxLat: 44.0, minLng: -9.5,  maxLng:  4.0  }, // Iberia
-  { minLat: 37.0, maxLat: 47.5, minLng:  7.0,  maxLng: 18.5  }, // Italy
-  { minLat: 49.0, maxLat: 54.5, minLng: 14.0,  maxLng: 24.0  }, // Poland/Czechia
-  { minLat: 55.0, maxLat: 65.5, minLng:  5.0,  maxLng: 28.0  }, // Scandinavia
-  { minLat: 35.5, maxLat: 42.0, minLng: 23.0,  maxLng: 30.0  }, // Balkans/Greece
-  { minLat: 45.5, maxLat: 49.5, minLng: 14.0,  maxLng: 24.0  }, // Austria/Hungary
-  { minLat: 44.0, maxLat: 56.0, minLng: 24.0,  maxLng: 42.0  }, // Ukraine/Belarus
-  { minLat: 55.0, maxLat: 60.5, minLng: 30.0,  maxLng: 61.0  }, // Russia west
-  { minLat: 36.0, maxLat: 42.0, minLng: 26.0,  maxLng: 45.0  }, // Turkey
-  { minLat: 40.0, maxLat: 47.5, minLng: -90.0, maxLng: -70.0 }, // NE USA
-  { minLat: 33.0, maxLat: 40.0, minLng:-122.0, maxLng: -80.0 }, // S+W USA
-  { minLat: 43.0, maxLat: 50.0, minLng: -95.0, maxLng: -72.0 }, // Canada
-  { minLat: 19.0, maxLat: 32.0, minLng:-117.0, maxLng: -87.0 }, // Mexico
-  { minLat: -34.0,maxLat: -10.0,minLng: -65.0, maxLng: -38.0 }, // Brazil/Argentina
-  { minLat: 33.0, maxLat: 43.5, minLng:130.0,  maxLng: 141.5 }, // Japan
-  { minLat: 34.0, maxLat: 38.5, minLng:126.5,  maxLng: 129.5 }, // South Korea
-  { minLat:  1.0, maxLat: 15.0, minLng: 99.0,  maxLng: 115.0 }, // SE Asia
-  { minLat: -38.5,maxLat: -27.0,minLng:140.0,  maxLng: 153.5 }, // Australia
-  { minLat: -34.5,maxLat: -26.0,minLng: 17.0,  maxLng:  31.5 }, // South Africa
+  { name: 'Германия / Франция / Швейцария', minLat: 47.0, maxLat: 53.5, minLng:  2.0,  maxLng: 15.0  },
+  { name: 'Великобритания / Ирландия',  minLat: 50.0, maxLat: 58.7, minLng: -8.0,  maxLng:  2.0  },
+  { name: 'Испания / Португалия',             minLat: 36.0, maxLat: 44.0, minLng: -9.5,  maxLng:  4.0  },
+  { name: 'Италия',                          minLat: 37.0, maxLat: 47.5, minLng:  7.0,  maxLng: 18.5  },
+  { name: 'Польша / Чехия',                  minLat: 49.0, maxLat: 54.5, minLng: 14.0,  maxLng: 24.0  },
+  { name: 'Скандинавия',                    minLat: 55.0, maxLat: 65.5, minLng:  5.0,  maxLng: 28.0  },
+  { name: 'Балканы / Греция',               minLat: 35.5, maxLat: 42.0, minLng: 23.0,  maxLng: 30.0  },
+  { name: 'Австрия / Венгрия',             minLat: 45.5, maxLat: 49.5, minLng: 14.0,  maxLng: 24.0  },
+  { name: 'Украина / Беларусь',            minLat: 44.0, maxLat: 56.0, minLng: 24.0,  maxLng: 42.0  },
+  { name: 'Западная Россия',               minLat: 55.0, maxLat: 60.5, minLng: 30.0,  maxLng: 61.0  },
+  { name: 'Турция',                          minLat: 36.0, maxLat: 42.0, minLng: 26.0,  maxLng: 45.0  },
+  { name: 'Северо-восток США',          minLat: 40.0, maxLat: 47.5, minLng: -90.0, maxLng: -70.0 },
+  { name: 'Юг / Запад США',             minLat: 33.0, maxLat: 40.0, minLng:-122.0, maxLng: -80.0 },
+  { name: 'Канада',                          minLat: 43.0, maxLat: 50.0, minLng: -95.0, maxLng: -72.0 },
+  { name: 'Мексика',                         minLat: 19.0, maxLat: 32.0, minLng:-117.0, maxLng: -87.0 },
+  { name: 'Бразилия / Аргентина',       minLat: -34.0,maxLat: -10.0,minLng: -65.0, maxLng: -38.0 },
+  { name: 'Япония',                          minLat: 33.0, maxLat: 43.5, minLng:130.0,  maxLng: 141.5 },
+  { name: 'Южная Корея',                  minLat: 34.0, maxLat: 38.5, minLng:126.5,  maxLng: 129.5 },
+  { name: 'Юго-восточная Азия',          minLat:  1.0, maxLat: 15.0, minLng: 99.0,  maxLng: 115.0 },
+  { name: 'Австралия',                        minLat: -38.5,maxLat: -27.0,minLng:140.0,  maxLng: 153.5 },
+  { name: 'Южная Африка',                minLat: -34.5,maxLat: -26.0,minLng: 17.0,  maxLng:  31.5 },
 ];
 
 function randomSeed() {
@@ -81,6 +81,13 @@ function randomSeed() {
   return {
     lat: z.minLat + Math.random() * (z.maxLat - z.minLat),
     lng: z.minLng + Math.random() * (z.maxLng - z.minLng),
+  };
+}
+
+function randomSeedInZone(zone) {
+  return {
+    lat: zone.minLat + Math.random() * (zone.maxLat - zone.minLat),
+    lng: zone.minLng + Math.random() * (zone.maxLng - zone.minLng),
   };
 }
 
@@ -121,9 +128,10 @@ function addToCache(entry) {
 
 /** Pick N random entries from cache that are geographically spread. */
 function pickFromCache(count) {
-  if (panoramaCache.length < count) return null; // not enough
-  // Shuffle and pick spread entries
-  const shuffled = [...panoramaCache].sort(() => Math.random() - 0.5);
+  // Exclude panoramas already used this server session
+  const available = panoramaCache.filter(e => !sessionUsed.has(e.id));
+  if (available.length < count) return null; // not enough fresh ones
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
   const picked = [];
   for (const entry of shuffled) {
     if (picked.every(p => haversineKm(p.lat, p.lng, entry.lat, entry.lng) > 300)) {
@@ -131,14 +139,52 @@ function pickFromCache(count) {
       if (picked.length === count) break;
     }
   }
-  // fallback: if spread requirement too strict, just take first N
   if (picked.length < count) return shuffled.slice(0, count).map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id }));
   return picked.map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id }));
 }
 
 loadCache();
 
-/** Preloader state */
+/* ───── Session memory (panoramas used this run — resets on server restart) ───── */
+
+const sessionUsed = new Set();
+
+function markUsed(imageIds) {
+  if (!Array.isArray(imageIds)) return;
+  imageIds.forEach(id => { if (id) sessionUsed.add(id); });
+  console.log(`[session] Used panoramas this session: ${sessionUsed.size}`);
+}
+
+/* ───── Leaderboard (persists across restarts) ───── */
+
+const LEADERBOARD_FILE = path.join(__dirname, 'leaderboard.json');
+let leaderboard = [];
+try {
+  if (fs.existsSync(LEADERBOARD_FILE)) {
+    leaderboard = JSON.parse(fs.readFileSync(LEADERBOARD_FILE, 'utf8'));
+    console.log(`[leaderboard] Loaded ${leaderboard.length} entries`);
+  }
+} catch (e) { leaderboard = []; }
+
+function saveLeaderboard() {
+  try { fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(leaderboard), 'utf8'); } catch (e) {}
+}
+
+/* ───── Game History (persists across restarts) ───── */
+
+const HISTORY_FILE = path.join(__dirname, 'game-history.json');
+let gameHistory = [];
+try {
+  if (fs.existsSync(HISTORY_FILE)) {
+    gameHistory = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+    console.log(`[history] Loaded ${gameHistory.length} games`);
+  }
+} catch (e) { gameHistory = []; }
+
+function saveGameHistory() {
+  try { fs.writeFileSync(HISTORY_FILE, JSON.stringify(gameHistory), 'utf8'); } catch (e) {}
+}
+
 let preloading = false;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -204,6 +250,8 @@ async function findMapillaryImageOnServer(lat, lng) {
       const img = data.data[0];
       const coords = img.geometry && img.geometry.coordinates;
       if (!coords) continue;
+      // Skip panoramas already used this session
+      if (sessionUsed.has(img.id)) { await sleep(50); continue; }
       console.log('[findMapillaryImage] found after ' + (attempt + 1) + ' attempt(s): ' + img.id);
       const result = { id: img.id, lat: coords[1], lng: coords[0] };
       addToCache(result);
@@ -287,6 +335,7 @@ app.get('/api/locations', async (_req, res) => {
   try {
     console.log('[/api/locations] Resolving random panoramas...');
     const locations = await resolveLocationsForGame(5);
+    markUsed(locations.map(l => l.imageId).filter(Boolean));
     res.json(locations);
   } catch (err) {
     console.error('/api/locations error:', err);
@@ -301,19 +350,28 @@ app.get('/api/rooms', (_req, res) => {
 
 // Panorama cache status
 app.get('/api/preload/status', (_req, res) => {
-  res.json({ count: panoramaCache.length, running: preloading });
+  res.json({ count: panoramaCache.length, sessionUsed: sessionUsed.size, running: preloading });
 });
 
-// Start background preloading
-app.post('/api/preload/start', (_req, res) => {
+// List available coverage zones
+app.get('/api/preload/zones', (_req, res) => {
+  res.json(COVERAGE_ZONES.map((z, i) => ({ index: i, name: z.name })));
+});
+
+// Start background preloading (optional zone filter via body: { zone: 5 })
+app.post('/api/preload/start', (req, res) => {
   if (preloading) return res.json({ ok: true, message: 'Already running' });
+  const zoneIdx = (typeof req.body?.zone === 'number') ? req.body.zone : null;
+  const zoneName = (zoneIdx !== null && COVERAGE_ZONES[zoneIdx]) ? COVERAGE_ZONES[zoneIdx].name : 'все регионы';
   preloading = true;
-  res.json({ ok: true });
-  console.log('[preload] Background preloading started');
+  res.json({ ok: true, zone: zoneName });
+  console.log(`[preload] Background preloading started (zone: ${zoneName})`);
   (async () => {
     while (preloading) {
       try {
-        const seed = randomSeed();
+        const seed = (zoneIdx !== null && COVERAGE_ZONES[zoneIdx])
+          ? randomSeedInZone(COVERAGE_ZONES[zoneIdx])
+          : randomSeed();
         const img = await findMapillaryImageOnServer(seed.lat, seed.lng);
         if (img) {
           console.log(`[preload] Cached: ${img.id} (total: ${panoramaCache.length})`);
@@ -333,6 +391,37 @@ app.post('/api/preload/stop', (_req, res) => {
   preloading = false;
   saveCache();
   res.json({ ok: true, count: panoramaCache.length });
+});
+
+// Global leaderboard — top 20 scores
+app.get('/api/leaderboard', (_req, res) => {
+  res.json([...leaderboard].sort((a, b) => b.score - a.score).slice(0, 20));
+});
+
+app.post('/api/leaderboard', (req, res) => {
+  const { nickname, score, mode } = req.body || {};
+  if (!nickname || typeof score !== 'number') return res.status(400).json({ error: 'invalid' });
+  leaderboard.push({ nickname, score, mode: mode || 'solo', date: new Date().toISOString() });
+  leaderboard.sort((a, b) => b.score - a.score);
+  if (leaderboard.length > 200) leaderboard = leaderboard.slice(0, 200);
+  saveLeaderboard();
+  res.json({ ok: true });
+});
+
+// Game history — store with coordinates
+app.post('/api/history', (req, res) => {
+  const { nickname, mode, totalScore, rounds } = req.body || {};
+  if (!nickname) return res.status(400).json({ error: 'invalid' });
+  gameHistory.unshift({
+    date: new Date().toISOString(),
+    nickname,
+    mode: mode || 'solo',
+    totalScore: totalScore || 0,
+    rounds: Array.isArray(rounds) ? rounds : [],
+  });
+  if (gameHistory.length > 1000) gameHistory = gameHistory.slice(0, 1000);
+  saveGameHistory();
+  res.json({ ok: true });
 });
 
 // Proxy Mapillary Graph API — server-side, token never exposed to client
@@ -380,21 +469,21 @@ io.on('connection', (socket) => {
   console.log(`⚡ Connected: ${socket.id}`);
 
   /* Create a room */
-  socket.on('create-room', ({ nickname }, cb) => {
-    const room = createRoom(socket.id, nickname);
+  socket.on('create-room', ({ nickname, color }, cb) => {
+    const room = createRoom(socket.id, nickname, color);
     socket.join(room.code);
     cb({ success: true, code: room.code, players: room.getPlayerList() });
     console.log(`🏠 Room ${room.code} created by ${nickname}`);
   });
 
   /* Join a room */
-  socket.on('join-room', ({ code, nickname }, cb) => {
+  socket.on('join-room', ({ code, nickname, color }, cb) => {
     const room = getRoom(code);
     if (!room) return cb({ success: false, error: 'Комната не найдена' });
     if (room.status !== 'waiting') return cb({ success: false, error: 'Игра уже началась' });
     if (room.players.size >= 10) return cb({ success: false, error: 'Комната заполнена' });
 
-    room.addPlayer(socket.id, nickname);
+    room.addPlayer(socket.id, nickname, color);
     socket.join(room.code);
     cb({ success: true, code: room.code, players: room.getPlayerList() });
     socket.to(room.code).emit('player-joined', { players: room.getPlayerList() });
@@ -454,10 +543,15 @@ io.on('connection', (socket) => {
     if (!ok) return cb({ success: false, error: 'Уже отгадано' });
 
     cb({ success: true });
-    // Notify others that a player has guessed
+    // Notify others that a player has guessed (include nickname+color for live map)
+    const guessingPlayer = room.players.get(socket.id);
     socket.to(room.code).emit('player-guessed', {
       playersGuessed: room.roundGuesses.size,
       totalPlayers: room.players.size,
+      nickname: guessingPlayer?.nickname,
+      color: guessingPlayer?.color || '#4fc3f7',
+      lat,
+      lng,
     });
 
     // If all guesses are in, finalize the round
@@ -468,25 +562,69 @@ io.on('connection', (socket) => {
         results,
         location: loc,
         round: room.currentRound + 1,
+        isLastRound: room.currentRound + 1 >= room.totalRounds,
       });
     }
   });
 
-  /* Advance to the next round */
+  /* Update player color in room */
+  socket.on('update-color', ({ color }, cb) => {
+    const room = getRoomByPlayer(socket.id);
+    if (!room) return cb?.({ success: false });
+    const player = room.players.get(socket.id);
+    if (player) player.color = color || '#4fc3f7';
+    cb?.({ success: true });
+    // Broadcast updated player list so everyone sees new color
+    io.to(room.code).emit('player-joined', { players: room.getPlayerList() });
+  });
+
+  /* Player signals ready for next round (replaces host-only next-round) */
+  socket.on('player-ready', (_, cb) => {
+    const room = getRoomByPlayer(socket.id);
+    if (!room || room.status !== 'playing') return cb?.({ success: false });
+
+    const allReady = room.markReady(socket.id);
+    cb?.({ success: true });
+
+    // Broadcast ready count to everyone
+    io.to(room.code).emit('ready-update', {
+      readyCount: room.getReadyCount(),
+      total: room.players.size,
+      readyIds: Array.from(room.readySet),
+    });
+
+    if (allReady) {
+      room.clearReady();
+      const nextLoc = room.nextRound();
+      if (!nextLoc) {
+        // Game over — mark all used this session
+        markUsed((room.resolvedImages || []).map(r => r.id));
+        io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard() });
+      } else {
+        const imageId = room.resolvedImages?.[room.currentRound]?.id ?? null;
+        io.to(room.code).emit('round-start', {
+          round: room.currentRound + 1,
+          totalRounds: room.totalRounds,
+          location: { lat: nextLoc.lat, lng: nextLoc.lng },
+          imageId,
+        });
+      }
+    }
+  });
+
+  /* Legacy: host-only force-advance (kept for backward compat) */
   socket.on('next-round', async (_, cb) => {
     const room = getRoomByPlayer(socket.id);
     if (!room || room.hostId !== socket.id) return cb?.({ success: false });
 
+    room.clearReady();
     const nextLoc = room.nextRound();
     if (!nextLoc) {
-      // Game over
+      markUsed((room.resolvedImages || []).map(r => r.id));
       io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard() });
       return cb?.({ success: true, finished: true });
     }
-
-    // Use the pre-resolved imageId -- no API call needed
     const imageId = room.resolvedImages?.[room.currentRound]?.id ?? null;
-
     cb?.({ success: true, finished: false });
     io.to(room.code).emit('round-start', {
       round: room.currentRound + 1,
