@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoGAYZZER — Лобби</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/animations.css" />
+</head>
+<body>
+
+  <!-- ============ LOBBY SCREEN ============ -->
+  <div id="screen-lobby" class="screen active">
+    <div class="lobby-container">
+      <div class="lobby-header">
+        <h2>Лобби</h2>
+        <div class="room-code-display">
+          <span>Код комнаты:</span>
+          <strong id="lobby-room-code">------</strong>
+          <button id="btn-copy-code" class="btn btn-sm btn-outline" title="Скопировать">📋</button>
+        </div>
+      </div>
+      <div class="lobby-info">
+        <p>Поделись кодом комнаты с друзьями. Убедись, что вы подключены через Radmin VPN.</p>
+      </div>
+      <div class="lobby-players">
+        <h3>Игроки <span id="lobby-player-count">(0/10)</span></h3>
+        <ul id="lobby-player-list"></ul>
+      </div>
+      <!-- Color picker -->
+      <div class="color-picker-row">
+        <span class="color-picker-label">Цвет:</span>
+        <div class="color-swatches" id="color-swatches">
+          <button class="color-swatch selected" data-color="#4fc3f7" style="background:#4fc3f7"></button>
+          <button class="color-swatch" data-color="#ef5350" style="background:#ef5350"></button>
+          <button class="color-swatch" data-color="#66bb6a" style="background:#66bb6a"></button>
+          <button class="color-swatch" data-color="#ffa726" style="background:#ffa726"></button>
+          <button class="color-swatch" data-color="#ab47bc" style="background:#ab47bc"></button>
+          <button class="color-swatch" data-color="#26c6da" style="background:#26c6da"></button>
+          <button class="color-swatch" data-color="#d4e157" style="background:#d4e157"></button>
+          <button class="color-swatch" data-color="#ff7043" style="background:#ff7043"></button>
+        </div>
+      </div>
+      <div class="lobby-actions">
+        <!-- Host-only: exclude specific panorama IDs from the game -->
+        <div id="exclude-pano-row" class="exclude-pano-row" style="display:none;">
+          <label for="exclude-pano-input" class="text-muted" style="font-size:13px;">Исключить панорамы (ID через запятую):</label>
+          <input type="text" id="exclude-pano-input" class="input-sm" placeholder="Вставь ID панорам..." autocomplete="off" />
+        </div>
+        <button id="btn-start-game" class="btn btn-primary btn-lg" style="display:none;">Начать игру</button>
+        <p id="lobby-wait-msg" class="text-muted">Ожидание хоста...</p>
+        <button id="btn-leave-lobby" class="btn btn-outline">Покинуть комнату</button>
+      </div>
+
+      <!-- Progress overlay shown while server resolves panoramas -->
+      <div id="resolving-overlay" class="resolving-overlay hidden">
+        <div class="resolving-spinner"></div>
+        <p id="resolving-text">Поиск панорам…</p>
+        <div class="resolving-track">
+          <div id="resolving-bar" class="resolving-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCRIPTS ============ -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/state.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/network.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app-lobby.js"></script>
+</body>
+</html>

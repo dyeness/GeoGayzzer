@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoGAYZZER — Игра</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Mapillary CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- App CSS -->
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/animations.css" />
+</head>
+<body>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <div id="screen-game" class="screen">
+    <!-- Panorama Viewer (fullscreen background) -->
+    <div id="panorama-container"></div>
+    <!-- Interaction lock overlay — shown for 1.5s at round start -->
+    <div id="panorama-lock" class="panorama-lock hidden"></div>
+
+    <!-- Compass overlay -->
+    <div id="compass" class="compass-widget hidden">
+      <div class="compass-face" id="compass-face">
+        <div class="compass-needle-n"></div>
+        <div class="compass-needle-s"></div>
+        <span class="compass-lbl compass-lbl-n">N</span>
+        <span class="compass-lbl compass-lbl-e">E</span>
+        <span class="compass-lbl compass-lbl-s">S</span>
+        <span class="compass-lbl compass-lbl-w">W</span>
+      </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="panorama-loading" class="panorama-loading">
+      <div class="spinner"></div>
+      <p>Загрузка панорамы...</p>
+    </div>
+
+    <!-- Panorama unavailable fallback -->
+    <div id="panorama-fallback" class="panorama-fallback hidden">
+      <span class="fallback-icon">🗺️</span>
+      <p class="fallback-title">Панорама недоступна</p>
+      <p id="fallback-coords" class="fallback-coords"></p>
+      <p class="text-muted">Угадай местоположение по карте справа</p>
+    </div>
+
+    <!-- HUD: Round info -->
+    <div id="game-hud" class="game-hud">
+      <div class="hud-round">
+        <span>Раунд</span>
+        <strong id="hud-round-num">1</strong>
+        <span>/ <span id="hud-round-total">5</span></span>
+      </div>
+      <div class="hud-score">
+        <span>Счёт:</span>
+        <strong id="hud-total-score">0</strong>
+      </div>
+    </div>
+
+    <!-- In-game leaderboard (multiplayer only) -->
+    <div id="game-leaderboard" class="game-leaderboard hidden">
+      <div class="game-lb-header">
+        <span>🏆 Лидерборд</span>
+        <span id="hud-guessed-badge" class="game-lb-guessed" style="display:none;">0/0 угадали</span>
+        <button id="btn-lb-toggle" class="game-lb-toggle" title="Свернуть">−</button>
+      </div>
+      <ol id="game-lb-list" class="game-lb-list"></ol>
+    </div>
+
+    <!-- Mini-map -->
+    <div class="minimap-outer">
+      <div id="minimap-wrapper" class="minimap-wrapper">
+        <div id="minimap" class="minimap"></div>
+        <div class="minimap-controls">
+          <select id="tile-select" class="tile-select" title="Стиль карты">
+            <option value="osm">🗺️ OpenStreetMap</option>
+            <option value="osm-hot">🔴 OSM Humanitarian</option>
+            <option value="carto-voyager">🌍 CartoDB Voyager</option>
+            <option value="carto-dark">🌑 CartoDB Dark</option>
+            <option value="carto-borders">🗾 CartoDB + Границы</option>
+            <option value="esri-satellite">🛰️ Esri Спутник</option>
+            <option value="esri-street">🏙️ Esri Streets</option>
+            <option value="esri-natgeo">🌿 NatGeo Style</option>
+          </select>
+          <button class="minimap-size-btn" id="minimap-size-down" title="Уменьшить">&#8722;</button>
+          <button class="minimap-size-btn" id="minimap-size-up" title="Увеличить">&#43;</button>
+        </div>
+      </div>
+      <button id="btn-guess" class="btn btn-primary btn-guess" disabled>🎯 УГАДАТЬ</button>
+    </div>
+  </div>
+
+  <!-- ============ ROUND RESULT SCREEN (fullscreen) ============ -->
+  <div id="screen-result" class="screen">
+    <div id="result-map" class="result-map-fullscreen"></div>
+    <div class="result-panel">
+      <div class="result-panel-inner">
+        <div class="result-location-row">
+          <span class="result-pin">📍</span>
+          <span id="result-location-name" class="result-location-name">—</span>
+        </div>
+        <div class="result-stats-row">
+          <div class="result-stat-block">
+            <span class="result-stat-value" id="result-distance">—</span>
+            <span class="result-stat-label">Расстояние</span>
+          </div>
+          <div class="result-stat-divider"></div>
+          <div class="result-stat-block">
+            <span class="result-stat-value" id="result-points">—</span>
+            <span class="result-stat-label">Очки</span>
+          </div>
+          <div class="result-stat-divider"></div>
+          <div class="result-stat-block">
+            <span class="result-stat-value" id="result-total-running">—</span>
+            <span class="result-stat-label">Итого</span>
+          </div>
+        </div>
+        <div id="result-multiplayer" class="result-multiplayer" style="display:none;">
+          <h4>Результаты раунда</h4>
+          <ul id="result-player-list"></ul>
+        </div>
+        <div id="ready-status" class="ready-status" style="display:none;">
+          <span id="ready-count-text">0/0 готовы</span>
+        </div>
+        <button id="btn-next-round" class="btn btn-primary btn-lg result-next-btn">Следующий раунд →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FINAL RESULTS SCREEN ============ -->
+  <div id="screen-final" class="screen">
+    <div class="final-container">
+      <div class="final-header">
+        <h2>🏆 Игра окончена!</h2>
+        <div class="final-score-display">
+          <span id="final-total-score" class="final-total">0</span>
+          <span class="final-max">/ 25 000</span>
+        </div>
+        <p id="final-rating" class="final-rating"></p>
+      </div>
+      <div class="final-rounds">
+        <h3>Разбивка по раундам</h3>
+        <div id="final-rounds-list" class="rounds-list"></div>
+      </div>
+      <div id="final-leaderboard" class="final-leaderboard" style="display:none;">
+        <h3>🏅 Таблица лидеров</h3>
+        <ol id="final-leaderboard-list"></ol>
+      </div>
+      <div class="final-actions">
+        <button id="btn-play-again" class="btn btn-primary btn-lg">Играть снова</button>
+        <button id="btn-back-menu" class="btn btn-outline">В меню</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SOLO LOADING OVERLAY ============ -->
+  <div id="solo-loading-overlay" class="solo-loading-overlay hidden">
+    <div class="solo-loading-box">
+      <div class="resolving-spinner"></div>
+      <p id="solo-loading-text">Поиск панорам…</p>
+      <div class="resolving-track" style="width:200px; margin: 0 auto;">
+        <div id="solo-loading-bar" class="resolving-bar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCRIPTS ============ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/mapillary-js@4.1.2/dist/mapillary.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/state.js"></script>
+  <script src="/js/locations.js"></script>
+  <script src="/js/scoring.js"></script>
+  <script src="/js/player.js"></script>
+  <script src="/js/panorama.js"></script>
+  <script src="/js/map.js"></script>
+  <script src="/js/network.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app-game.js"></script>
+</body>
+</html>
