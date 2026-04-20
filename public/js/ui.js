@@ -64,18 +64,16 @@ const UI = (() => {
   }
 
   function updateMultiplayerHUD(guessed, total) {
-    const hudMp = document.getElementById('hud-multiplayer');
-    const guessedEl = document.getElementById('hud-guessed-count');
-    const totalEl = document.getElementById('hud-total-players');
-
-    if (hudMp) hudMp.style.display = 'flex';
-    if (guessedEl) guessedEl.textContent = guessed;
-    if (totalEl)   totalEl.textContent = total;
+    const badge = document.getElementById('hud-guessed-badge');
+    if (badge) {
+      badge.textContent = guessed + '/' + total + ' угадали';
+      badge.style.display = 'inline';
+    }
   }
 
   function hideMultiplayerHUD() {
-    const hudMp = document.getElementById('hud-multiplayer');
-    if (hudMp) hudMp.style.display = 'none';
+    const badge = document.getElementById('hud-guessed-badge');
+    if (badge) badge.style.display = 'none';
   }
 
   /* ── Menu Screen ── */
@@ -264,6 +262,24 @@ const UI = (() => {
     if (el) el.style.display = 'none';
   }
 
+  /** Show/hide full-screen loading overlay for solo game */
+  function showSoloLoading(show, text) {
+    const overlay = document.getElementById('solo-loading-overlay');
+    if (!overlay) return;
+    overlay.classList.toggle('hidden', !show);
+    if (show && text) {
+      const t = document.getElementById('solo-loading-text');
+      if (t) t.textContent = text;
+    }
+  }
+
+  function updateSoloLoadingProgress(found, total) {
+    const bar = document.getElementById('solo-loading-bar');
+    const text = document.getElementById('solo-loading-text');
+    if (bar) bar.style.width = total > 0 ? Math.round(found / total * 100) + '%' : '0%';
+    if (text) text.textContent = 'Поиск панорам… ' + found + '/' + total;
+  }
+
   /** Show/hide the "resolving panoramas" progress overlay in the lobby.
    * @param {number|null} found  null = hide overlay
    * @param {number|null} total
@@ -374,6 +390,8 @@ const UI = (() => {
     showResolvingProgress,
     showInGameLeaderboard,
     updateInGameLeaderboard,
+    showSoloLoading,
+    updateSoloLoadingProgress,
     escapeHtml,
   };
 })();

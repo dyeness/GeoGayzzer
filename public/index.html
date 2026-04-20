@@ -61,6 +61,9 @@
         <button id="btn-stats" class="btn btn-outline btn-lg">
           <span class="btn-icon">📊</span> Статистика
         </button>
+        <button id="btn-preload" class="btn btn-outline btn-lg">
+          <span class="btn-icon">🗄️</span> Предзагрузить панорамы
+        </button>
       </div>
       <div class="menu-footer">
         <button id="btn-logout" class="btn btn-text">Сменить никнейм</button>
@@ -204,14 +207,12 @@
         <span>Счёт:</span>
         <strong id="hud-total-score">0</strong>
       </div>
-      <div class="hud-multiplayer" id="hud-multiplayer" style="display:none;">
-        <span id="hud-guessed-count">0</span>/<span id="hud-total-players">0</span> угадали
-      </div>
     </div>
-    <!-- In-game leaderboard (multiplayer only) -->
+    <!-- In-game leaderboard (multiplayer only) — left side, below HUD -->
     <div id="game-leaderboard" class="game-leaderboard hidden">
       <div class="game-lb-header">
         <span>🏆 Лидерборд</span>
+        <span id="hud-guessed-badge" class="game-lb-guessed" style="display:none;">0/0 угадали</span>
         <button id="btn-lb-toggle" class="game-lb-toggle" title="Свернуть">−</button>
       </div>
       <ol id="game-lb-list" class="game-lb-list"></ol>
@@ -300,6 +301,36 @@
       <div class="final-actions">
         <button id="btn-play-again" class="btn btn-primary btn-lg">Играть снова</button>
         <button id="btn-back-menu" class="btn btn-outline">В меню</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SOLO LOADING OVERLAY ============ -->
+  <div id="solo-loading-overlay" class="solo-loading-overlay hidden">
+    <div class="solo-loading-box">
+      <div class="resolving-spinner"></div>
+      <p id="solo-loading-text">Поиск панорам…</p>
+      <div class="resolving-track" style="width:200px; margin: 0 auto;">
+        <div id="solo-loading-bar" class="resolving-bar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PRELOAD MODAL ============ -->
+  <div id="modal-preload" class="modal-overlay" style="display:none;">
+    <div class="modal">
+      <h3>🗄️ Предзагрузка панорам</h3>
+      <p class="text-muted" style="text-align:center; margin-bottom:16px;">Сервер будет искать рабочие панорамы и сохранять их в базу. Игра будет загружаться мгновенно когда база наполнится.</p>
+      <div class="preload-status">
+        <span>В базе: <strong id="preload-count">0</strong> панорам</span>
+        <span id="preload-status-badge" class="preload-badge preload-badge-idle">Остановлено</span>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-preload-start" class="btn btn-primary">▶ Начать</button>
+        <button id="btn-preload-stop" class="btn btn-outline" disabled>⏹ Остановить</button>
+      </div>
+      <div class="modal-actions" style="margin-top:8px;">
+        <button id="btn-preload-close" class="btn btn-text">Закрыть</button>
       </div>
     </div>
   </div>

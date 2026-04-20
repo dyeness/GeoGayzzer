@@ -7,6 +7,29 @@ const App = (() => {
   // Generation counter — incremented on every new startRound() call.
   // Lets async operations detect they've been superseded by a newer round.
   let _roundGen = 0;
+  let _preloadPollTimer = null;
+
+  function _startPreloadPoll() {
+    _stopPreloadPoll();
+    _preloadPollTimer = setInterval(async () => {
+      try {
+        const s = await fetch('/api/preload/status').then(r => r.json());
+        const el = document.getElementById('preload-count');
+        if (el) el.textContent = s.count;
+        if (!s.running) {
+          _stopPreloadPoll();
+          document.getElementById('btn-preload-start').disabled = false;
+          document.getElementById('btn-preload-stop').disabled  = true;
+          const badge = document.getElementById('preload-status-badge');
+          if (badge) { badge.textContent = 'Остановлено'; badge.className = 'preload-badge preload-badge-idle'; }
+        }
+      } catch(e) { /* ignore */ }
+    }, 2000);
+  }
+
+  function _stopPreloadPoll() {
+    if (_preloadPollTimer) { clearInterval(_preloadPollTimer); _preloadPollTimer = null; }
+  }
 
   /* ══════════════════════════════════════
      Initialization
@@ -59,6 +82,49 @@ const App = (() => {
     document.getElementById('btn-join-cancel')?.addEventListener('click', () => UI.hideModal('modal-join'));
     document.getElementById('btn-stats')?.addEventListener('click', () => UI.showStats());
     document.getElementById('btn-logout')?.addEventListener('click', handleLogout);
+
+    // ─── Preload panoramas ───
+    document.getElementById('btn-preload')?.addEventListener('click', async () => {
+      // Update count before opening
+      try {
+        const s = await fetch('/api/preload/status').then(r => r.json());
+        const el = document.getElementById('preload-count');
+        if (el) el.textContent = s.count;
+        const badge = document.getElementById('preload-status-badge');
+        if (badge) {
+          badge.textContent = s.running ? 'Работает' : 'Остановлено';
+          badge.className = 'preload-badge ' + (s.running ? 'preload-badge-running' : 'preload-badge-idle');
+        }
+        const startBtn = document.getElementById('btn-preload-start');
+        const stopBtn  = document.getElementById('btn-preload-stop');
+        if (startBtn) startBtn.disabled = s.running;
+        if (stopBtn)  stopBtn.disabled  = !s.running;
+      } catch(e) { /* ignore */ }
+      UI.showModal('modal-preload');
+    });
+
+    document.getElementById('btn-preload-close')?.addEventListener('click', () => UI.hideModal('modal-preload'));
+
+    document.getElementById('btn-preload-start')?.addEventListener('click', async () => {
+      await fetch('/api/preload/start', { method: 'POST' });
+      document.getElementById('btn-preload-start').disabled = true;
+      document.getElementById('btn-preload-stop').disabled  = false;
+      const badge = document.getElementById('preload-status-badge');
+      if (badge) { badge.textContent = 'Работает'; badge.className = 'preload-badge preload-badge-running'; }
+      // Poll count every 2s while modal open
+      _startPreloadPoll();
+    });
+
+    document.getElementById('btn-preload-stop')?.addEventListener('click', async () => {
+      const res = await fetch('/api/preload/stop', { method: 'POST' }).then(r => r.json());
+      document.getElementById('btn-preload-start').disabled = false;
+      document.getElementById('btn-preload-stop').disabled  = true;
+      const badge = document.getElementById('preload-status-badge');
+      if (badge) { badge.textContent = 'Остановлено'; badge.className = 'preload-badge preload-badge-idle'; }
+      const el = document.getElementById('preload-count');
+      if (el && res.count !== undefined) el.textContent = res.count;
+      _stopPreloadPoll();
+    });
     document.getElementById('btn-lb-toggle')?.addEventListener('click', () => {
       const lb = document.getElementById('game-leaderboard');
       const btn = document.getElementById('btn-lb-toggle');
@@ -171,6 +237,10 @@ const App = (() => {
     UI.hideMultiplayerRoundResults();
     UI.hideMultiplayerLeaderboard();
 
+    // Show solo loading animation
+    UI.showSoloLoading(true, 'Поиск панорам…');
+    UI.updateSoloLoadingProgress(0, 5);
+
     // Fetch locations from server or use local pool
     let locations;
     try {
@@ -178,6 +248,8 @@ const App = (() => {
       locations = await res.json();
     } catch {
       locations = Locations.pickRandom(5);
+    } finally {
+      UI.showSoloLoading(false);
     }
 
     GameState.set('locations', locations);
@@ -208,12 +280,15 @@ const App = (() => {
     let foundLocation = null;
 
     if (location.imageId) {
-      // Server already resolved the panorama — just load it directly, no bbox search
+      // Server already resolved the panorama — load it directly.
+      // Use the server-provided coords as the scoring point (they come directly from
+      // the Mapillary API geometry field and are authoritative).
+      // Do NOT overwrite with viewer.getImage() coords — the viewer may redirect
+      // to a neighbour image which would shift the scoring point to the wrong place.
       if (_roundGen !== myRound) return;
-      const actual = await Panorama.loadById(location.imageId, location.lat, location.lng);
+      await Panorama.loadById(location.imageId, location.lat, location.lng);
       if (_roundGen !== myRound) return;
-      // Use viewer's actual coords (may differ slightly due to moveTo redirect)
-      foundLocation = { ...location, lat: actual?.lat ?? location.lat, lng: actual?.lng ?? location.lng };
+      foundLocation = { ...location };
     } else {
       // Fallback: no imageId (e.g. /api/locations failed, using local pool)
       // Try the scheduled location, then extras spread across the globe

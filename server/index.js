@@ -5,6 +5,7 @@
 
 const path = require('path');
 const https = require('https');
+const fs = require('fs');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -83,6 +84,63 @@ function randomSeed() {
   };
 }
 
+/* ───── Panorama cache ───── */
+
+const CACHE_FILE = path.join(__dirname, 'panorama-cache.json');
+
+/** In-memory cache: [{id, lat, lng}, ...] */
+let panoramaCache = [];
+
+function loadCache() {
+  try {
+    if (fs.existsSync(CACHE_FILE)) {
+      panoramaCache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
+      console.log(`[cache] Loaded ${panoramaCache.length} panoramas from cache`);
+    }
+  } catch (e) {
+    console.warn('[cache] Failed to load cache:', e.message);
+    panoramaCache = [];
+  }
+}
+
+function saveCache() {
+  try {
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(panoramaCache), 'utf8');
+  } catch (e) {
+    console.warn('[cache] Failed to save cache:', e.message);
+  }
+}
+
+function addToCache(entry) {
+  // Avoid duplicates
+  if (panoramaCache.some(e => e.id === entry.id)) return;
+  panoramaCache.push(entry);
+  // Save every 10 new entries to avoid excessive writes
+  if (panoramaCache.length % 10 === 0) saveCache();
+}
+
+/** Pick N random entries from cache that are geographically spread. */
+function pickFromCache(count) {
+  if (panoramaCache.length < count) return null; // not enough
+  // Shuffle and pick spread entries
+  const shuffled = [...panoramaCache].sort(() => Math.random() - 0.5);
+  const picked = [];
+  for (const entry of shuffled) {
+    if (picked.every(p => haversineKm(p.lat, p.lng, entry.lat, entry.lng) > 300)) {
+      picked.push(entry);
+      if (picked.length === count) break;
+    }
+  }
+  // fallback: if spread requirement too strict, just take first N
+  if (picked.length < count) return shuffled.slice(0, count).map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id }));
+  return picked.map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id }));
+}
+
+loadCache();
+
+/** Preloader state */
+let preloading = false;
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function mapillaryGet(url) {
@@ -147,7 +205,9 @@ async function findMapillaryImageOnServer(lat, lng) {
       const coords = img.geometry && img.geometry.coordinates;
       if (!coords) continue;
       console.log('[findMapillaryImage] found after ' + (attempt + 1) + ' attempt(s): ' + img.id);
-      return { id: img.id, lat: coords[1], lng: coords[0] };
+      const result = { id: img.id, lat: coords[1], lng: coords[0] };
+      addToCache(result);
+      return result;
     } catch (err) {
       const msg = (err.message || '');
       console.warn('[findMapillaryImage] attempt=' + attempt + ' (' + testLat.toFixed(3) + ',' + testLng.toFixed(3) + '): ' + msg.slice(0, 80));
@@ -160,15 +220,26 @@ async function findMapillaryImageOnServer(lat, lng) {
 async function resolveLocationsForGame(count, onProgress) {
   if (!count) count = 5;
 
+  // Fast path: use cache if we have enough entries
+  const cached = pickFromCache(count);
+  if (cached && cached.length >= count) {
+    console.log(`[resolveLocations] Using ${count} cached panoramas`);
+    cached.forEach((loc, i) => {
+      if (onProgress) onProgress(i + 1, loc);
+    });
+    return cached;
+  }
+
+  console.log(`[resolveLocations] Cache too small (${panoramaCache.length}), searching API...`);
+
   const found = [];
   const usedZoneIndices = new Set();
   let totalAttempts = 0;
-  const MAX_TOTAL = count * 4; // safety cap on total location searches
+  const MAX_TOTAL = count * 4;
 
   while (found.length < count && totalAttempts < MAX_TOTAL) {
     totalAttempts++;
 
-    // Pick a zone, prefer unused ones for geographic variety
     let zoneIdx;
     if (usedZoneIndices.size < COVERAGE_ZONES.length) {
       do { zoneIdx = Math.floor(Math.random() * COVERAGE_ZONES.length); }
@@ -226,6 +297,42 @@ app.get('/api/locations', async (_req, res) => {
 // List open rooms (for room browser)
 app.get('/api/rooms', (_req, res) => {
   res.json(getAllRooms());
+});
+
+// Panorama cache status
+app.get('/api/preload/status', (_req, res) => {
+  res.json({ count: panoramaCache.length, running: preloading });
+});
+
+// Start background preloading
+app.post('/api/preload/start', (_req, res) => {
+  if (preloading) return res.json({ ok: true, message: 'Already running' });
+  preloading = true;
+  res.json({ ok: true });
+  console.log('[preload] Background preloading started');
+  (async () => {
+    while (preloading) {
+      try {
+        const seed = randomSeed();
+        const img = await findMapillaryImageOnServer(seed.lat, seed.lng);
+        if (img) {
+          console.log(`[preload] Cached: ${img.id} (total: ${panoramaCache.length})`);
+        }
+        await sleep(200);
+      } catch (e) {
+        await sleep(1000);
+      }
+    }
+    saveCache();
+    console.log('[preload] Stopped. Cache saved: ' + panoramaCache.length + ' panoramas');
+  })();
+});
+
+// Stop background preloading
+app.post('/api/preload/stop', (_req, res) => {
+  preloading = false;
+  saveCache();
+  res.json({ ok: true, count: panoramaCache.length });
 });
 
 // Proxy Mapillary Graph API — server-side, token never exposed to client
