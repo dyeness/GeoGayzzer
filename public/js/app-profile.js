@@ -77,6 +77,17 @@
     /* Nickname */
     document.getElementById('profile-nickname').textContent = prof.nickname;
 
+    /* Prestige badge */
+    const prestigeBadge = document.getElementById('prestige-badge');
+    if (prestigeBadge) {
+      if ((prof.prestige || 0) > 0) {
+        prestigeBadge.textContent = `[${prof.prestige}💎]`;
+        prestigeBadge.classList.remove('hidden');
+      } else {
+        prestigeBadge.classList.add('hidden');
+      }
+    }
+
     /* Level badge + XP bar */
     document.getElementById('level-badge').textContent = `Ур. ${prof.level}`;
     const xpPct = prof.xpNeeded > 0 ? Math.min((prof.currentXp / prof.xpNeeded) * 100, 100) : 100;
@@ -99,6 +110,9 @@
 
     /* Achievements tab */
     renderAchievements(prof.achievements);
+
+    /* All achievements tab */
+    renderAllAchievements(prof.achievements);
 
     /* Last game tab */
     renderLastGame(prof.lastGame);
@@ -139,6 +153,39 @@
         </div>
         <div class="ach-count">×${a.count}</div>
       </div>`).join('');
+  }
+
+  async function renderAllAchievements(earnedList) {
+    const container = document.getElementById('all-achievements-list');
+    if (!container) return;
+
+    // Build a set of earned ids for quick lookup
+    const earnedIds = new Set((earnedList || []).map(a => a.id));
+
+    try {
+      const defs = await fetch('/api/achievements').then(r => r.json());
+      container.innerHTML = defs.map(def => {
+        const earned = earnedIds.has(def.id);
+        const earnedCount = (earnedList || []).filter(a => a.id === def.id).length;
+        const countBadge  = earned && earnedCount > 1
+          ? `<div class="ach-count">×${earnedCount}</div>`
+          : '';
+        const checkMark   = earned
+          ? '<span class="ach-earned-mark">✔️</span>'
+          : '<span class="ach-lock-mark">🔒</span>';
+        return `
+        <div class="ach-card${earned ? '' : ' locked'}">
+          <div class="ach-icon">${escapeHtml(def.icon)}</div>
+          <div class="ach-body">
+            <div class="ach-name">${escapeHtml(def.name)}</div>
+            <div class="ach-desc">${escapeHtml(def.desc)}</div>
+          </div>
+          ${countBadge || checkMark}
+        </div>`;
+      }).join('');
+    } catch {
+      container.innerHTML = '<p class="empty-state">Ошибка загрузки</p>';
+    }
   }
 
   function renderLastGame(game) {

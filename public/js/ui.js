@@ -253,34 +253,9 @@ const UI = (() => {
     if (container) container.style.display = 'none';
   }
 
-  /* ── Stats Screen ── */
+  /* ── Players Screen ── */
 
-  function showStats() {
-    const stats = Player.getStats();
-
-    document.getElementById('stats-nickname').textContent = GameState.get('nickname');
-    document.getElementById('stat-games').textContent = stats.gamesPlayed;
-    document.getElementById('stat-avg').textContent = stats.averageScore.toLocaleString();
-    document.getElementById('stat-best').textContent = stats.bestGame.toLocaleString();
-    document.getElementById('stat-best-round').textContent = stats.bestRound.toLocaleString();
-
-    const historyEl = document.getElementById('stats-history-list');
-    if (historyEl) {
-      if (stats.history.length === 0) {
-        historyEl.innerHTML = '<p class="text-muted">Пока нет игр</p>';
-      } else {
-        historyEl.innerHTML = stats.history.map((g) => {
-          const date = new Date(g.date).toLocaleDateString('ru-RU');
-          return `
-            <div class="history-item">
-              <span>${date} — ${g.mode === 'multiplayer' ? '👥' : '🎯'}</span>
-              <strong>${g.score.toLocaleString()} pts</strong>
-            </div>
-          `;
-        }).join('');
-      }
-    }
-
+  function showPlayers() {
     showScreen('stats');
   }
 
@@ -470,7 +445,7 @@ const UI = (() => {
     showReadyStatus,
     hideReadyStatus,
     showReadyButton,
-    showStats,
+    showPlayers,
     showJoinError,
     hideJoinError,
     showRoomList,

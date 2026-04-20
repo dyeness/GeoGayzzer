@@ -437,3 +437,155 @@
   line-height: 1.5;
 }
 .rules-list li strong { color: var(--text-primary); }
+
+/* ── Prestige badge ───────────────────────────────────────────────────────── */
+
+.profile-nickname-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.prestige-badge {
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: #a78bfa;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+.prestige-badge.hidden { display: none; }
+
+/* ── All-achievements tab (locked state) ─────────────────────────────────── */
+
+.ach-card.locked {
+  opacity: 0.38;
+  filter: grayscale(0.7);
+}
+.ach-card.locked .ach-name {
+  color: var(--text-secondary);
+}
+
+.ach-lock-mark {
+  font-size: 18px;
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: right;
+}
+
+.ach-earned-mark {
+  font-size: 18px;
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ── Players screen (menu) ────────────────────────────────────────────────── */
+
+.players-screen-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.players-screen-header {
+  text-align: center;
+  margin-bottom: 8px;
+  width: 100%;
+}
+.players-screen-header h2 { font-size: var(--font-2xl); }
+
+.players-screen-sub {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+}
+
+.player-row-rank {
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.player-row-rank-medal {
+  font-size: 20px;
+  min-width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.player-row-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4fc3f7 0%, #ab47bc 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.player-row-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.player-row-nick {
+  font-weight: 600;
+  font-size: var(--font-md);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.player-row-prestige {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: #a78bfa;
+  white-space: nowrap;
+}
+
+.player-row-sub {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.player-row-link {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: var(--font-sm);
+  text-decoration: none;
+}

@@ -446,6 +446,10 @@ app.get('/api/profiles', (_req, res) => {
   res.json(profiles.getAllProfiles());
 });
 
+app.get('/api/achievements', (_req, res) => {
+  res.json(profiles.getAchievementDefs());
+});
+
 /* ── Auth API ── */
 app.post('/api/auth/register', (req, res) => {
   const { nickname, password } = req.body || {};

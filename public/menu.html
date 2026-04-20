@@ -33,7 +33,7 @@
           <span class="btn-icon">🔗</span> Присоединиться
         </button>
         <button id="btn-stats" class="btn btn-outline btn-lg">
-          <span class="btn-icon">📊</span> Статистика
+          <span class="btn-icon">�</span> Игроки
         </button>
         <button id="btn-profile" class="btn btn-outline btn-lg">
           <span class="btn-icon">👤</span> Мой профиль
@@ -55,36 +55,17 @@
     </div>
   </div>
 
-  <!-- ============ STATS SCREEN ============ -->
+  <!-- ============ PLAYERS SCREEN ============ -->
   <div id="screen-stats" class="screen">
-    <div class="stats-container">
-      <div class="stats-header">
-        <h2>📊 Статистика</h2>
-        <p>Игрок: <strong id="stats-nickname"></strong></p>
+    <div class="players-screen-container">
+      <div class="players-screen-header">
+        <h2>👥 Игроки</h2>
+        <p class="players-screen-sub">Все зарегистрированные игроки — отсортированы по XP</p>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-value" id="stat-games">0</span>
-          <span class="stat-label">Игр сыграно</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value" id="stat-avg">0</span>
-          <span class="stat-label">Средний счёт</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value" id="stat-best">0</span>
-          <span class="stat-label">Лучший счёт</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value" id="stat-best-round">0</span>
-          <span class="stat-label">Лучший раунд</span>
-        </div>
+      <div id="players-list" class="players-list">
+        <p class="menu-lb-empty">Загрузка...</p>
       </div>
-      <div class="stats-history">
-        <h3>Последние игры</h3>
-        <div id="stats-history-list" class="history-list"></div>
-      </div>
-      <button id="btn-stats-back" class="btn btn-outline">← Назад</button>
+      <button id="btn-stats-back" class="btn btn-outline" style="margin-top:24px;">← Назад</button>
     </div>
   </div>
 

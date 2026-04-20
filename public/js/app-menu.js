@@ -27,6 +27,42 @@
     if (_preloadPollTimer) { clearInterval(_preloadPollTimer); _preloadPollTimer = null; }
   }
 
+  async function _showPlayers() {
+    UI.showPlayers();
+    const list = document.getElementById('players-list');
+    if (!list) return;
+    list.innerHTML = '<p class="menu-lb-empty">Загрузка...</p>';
+    try {
+      const players = await fetch('/api/profiles').then(r => r.json());
+      if (!players.length) {
+        list.innerHTML = '<p class="menu-lb-empty">Нет зарегистрированных игроков</p>';
+        return;
+      }
+      list.innerHTML = players.map((p, i) => {
+        const avatar   = (p.nickname || '?').charAt(0).toUpperCase();
+        const prestige = p.prestige > 0
+          ? `<span class="player-row-prestige">[${p.prestige}💎]</span>`
+          : '';
+        const medals = ['', '🥇', '🥈', '🥉'];
+        const rankBadge = medals[i + 1]
+          ? `<span class="player-row-rank-medal">${medals[i + 1]}</span>`
+          : `<span class="player-row-rank">${i + 1}</span>`;
+        return `
+        <div class="player-row">
+          ${rankBadge}
+          <div class="player-row-avatar">${UI.escapeHtml(avatar)}</div>
+          <div class="player-row-info">
+            <span class="player-row-nick">${UI.escapeHtml(p.nickname)}${prestige}</span>
+            <span class="player-row-sub">Ур. ${p.level} &middot; ${p.gamesPlayed} игр</span>
+          </div>
+          <a href="/profile/${encodeURIComponent(p.nickname)}" class="btn btn-sm btn-outline player-row-link">Профиль →</a>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      list.innerHTML = '<p class="menu-lb-empty">Ошибка загрузки</p>';
+    }
+  }
+
   async function _loadLeaderboard() {
     try {
       const lb = await fetch('/api/leaderboard').then(r => r.json());
@@ -108,7 +144,7 @@
       _loadRoomList(url);
     });
     document.getElementById('btn-join-cancel')?.addEventListener('click', () => UI.hideModal('modal-join'));
-    document.getElementById('btn-stats')?.addEventListener('click', () => UI.showStats());
+    document.getElementById('btn-stats')?.addEventListener('click', () => _showPlayers());
     document.getElementById('btn-stats-back')?.addEventListener('click', () => {
       document.getElementById('screen-stats')?.classList.remove('active');
       document.getElementById('screen-menu')?.classList.add('active');

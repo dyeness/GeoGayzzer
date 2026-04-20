@@ -24,7 +24,10 @@
     <div class="profile-header-card">
       <div class="profile-avatar" id="profile-avatar">?</div>
       <div class="profile-info">
-        <h1 class="profile-nickname" id="profile-nickname">—</h1>
+        <div class="profile-nickname-row">
+          <h1 class="profile-nickname" id="profile-nickname">—</h1>
+          <span class="prestige-badge hidden" id="prestige-badge"></span>
+        </div>
         <div class="profile-level-row">
           <span class="level-badge" id="level-badge">Ур. 1</span>
           <button class="xp-info-btn" id="xp-info-btn" title="Как получать опыт и правила игры">?</button>
@@ -47,7 +50,8 @@
     <div class="profile-tabs">
       <button class="tab-btn active" data-tab="records">🏅 Рекорды</button>
       <button class="tab-btn" data-tab="achievements">🎖️ Достижения</button>
-      <button class="tab-btn" data-tab="lastgame">📋 Последняя игра</button>
+      <button class="tab-btn" data-tab="allachievements">🏆 Все</button>
+      <button class="tab-btn" data-tab="lastgame">📋 Последняя</button>
     </div>
 
     <!-- ── Records tab ────────────────────────────────────── -->
@@ -95,7 +99,15 @@
         <p class="empty-state">Нет достижений</p>
       </div>
     </div>
-
+    <!-- ── All achievements tab ───────────────────────────────── -->
+    <div class="tab-pane" id="tab-allachievements">
+      <div class="achievements-header" id="all-ach-header">
+        <span>Все достижения в игре</span>
+      </div>
+      <div class="achievements-list" id="all-achievements-list">
+        <p class="empty-state">Загрузка...</p>
+      </div>
+    </div>
     <!-- ── Last game tab ──────────────────────────────────── -->
     <div class="tab-pane" id="tab-lastgame">
       <div id="lastgame-content" class="lastgame-card">

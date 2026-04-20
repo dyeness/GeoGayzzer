@@ -54,6 +54,14 @@ function getLevelInfo(totalXp) {
   }
 }
 
+/**
+ * Prestige: every 55 levels gives +1 prestige.
+ * Level 55 → prestige 1, level 110 → prestige 2, etc.
+ */
+function getPrestige(level) {
+  return Math.floor(level / 55);
+}
+
 /** XP earned at the end of a round */
 function calcRoundXp(score, distance, stolen, roundPlacement, playerCount) {
   // Base: score / 8 (more generous than /10)
@@ -307,17 +315,24 @@ function getProfile(nickname) {
   const prof = profiles[key];
   if (!prof) return null;
   const { level, currentXp, xpNeeded } = getLevelInfo(prof.totalXp);
-  return { ...prof, level, currentXp, xpNeeded };
+  const prestige = getPrestige(level);
+  return { ...prof, level, currentXp, xpNeeded, prestige };
 }
 
 /** Returns a lightweight list for the leaderboard (nickname + level + totalXp). */
 function getAllProfiles() {
   return Object.values(profiles).map(p => {
     const { level } = getLevelInfo(p.totalXp);
-    return { nickname: p.nickname, level, totalXp: p.totalXp, gamesPlayed: p.gamesPlayed };
+    const prestige  = getPrestige(level);
+    return { nickname: p.nickname, level, totalXp: p.totalXp, gamesPlayed: p.gamesPlayed, prestige };
   }).sort((a, b) => b.totalXp - a.totalXp);
+}
+
+/** Returns all achievement definitions as an ordered array. */
+function getAchievementDefs() {
+  return Object.entries(ACHIEVEMENT_DEFS).map(([id, def]) => ({ id, ...def }));
 }
 
 loadProfiles();
 
-module.exports = { getProfile, getAllProfiles, updateAfterRound, updateAfterGame, initProfile, getLevelInfo };
+module.exports = { getProfile, getAllProfiles, getAchievementDefs, updateAfterRound, updateAfterGame, initProfile, getLevelInfo };
