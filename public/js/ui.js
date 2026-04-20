@@ -108,6 +108,8 @@ const UI = (() => {
 
     if (startBtn) startBtn.style.display = isHost ? 'block' : 'none';
     if (waitMsg)  waitMsg.style.display = isHost ? 'none' : 'block';
+    const excludeRow = document.getElementById('exclude-pano-row');
+    if (excludeRow) excludeRow.style.display = isHost ? 'block' : 'none';
   }
 
   /* ── Result Screen (fullscreen) ── */

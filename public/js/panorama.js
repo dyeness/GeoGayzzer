@@ -308,5 +308,16 @@ const Panorama = (() => {
     GameState.set('mapillaryImageId', null);
   }
 
-  return { init, reset, loadLocation, loadById, findImage, destroy };
+  /**
+   * Block panorama interaction for `ms` milliseconds at round start.
+   * Shows a transparent overlay (cursor:not-allowed) for the duration.
+   */
+  function lockInteraction(ms = 1500) {
+    const el = document.getElementById('panorama-lock');
+    if (!el) return;
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), ms);
+  }
+
+  return { init, reset, loadLocation, loadById, findImage, destroy, lockInteraction };
 })();

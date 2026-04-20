@@ -8,3 +8,5 @@ npm-debug.log*
 Thumbs.db
 server/leaderboard.json
 server/game-history.json
+server/panorama-plays.json
+server/accounts.json

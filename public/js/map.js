@@ -246,7 +246,7 @@ const GameMap = (() => {
   function resetMiniMap() {
     clearGuessMarker();
     // Clear dev target marker
-    if (_devTargetMarker && miniMap) { miniMap.removeLayer(_devTargetMarker); _devTargetMarker = null; }
+    clearDevTarget();
     if (miniMap) {
       miniMap.setView([20, 0], 2);
     }
@@ -395,6 +395,11 @@ const GameMap = (() => {
     miniMap.setView([lat, lng], miniMap.getZoom());
   }
 
+  function clearDevTarget() {
+    if (_devTargetMarker && miniMap) { miniMap.removeLayer(_devTargetMarker); }
+    _devTargetMarker = null;
+  }
+
   /** Invalidate map sizes (call after showing/hiding containers) */
   function invalidateAll() {
     setTimeout(() => {
@@ -418,6 +423,7 @@ const GameMap = (() => {
     updateLiveMarker,
     clearLiveMarkers,
     showDevTarget,
+    clearDevTarget,
     invalidateAll,
     invalidateResultMap,
   };

@@ -72,10 +72,10 @@ const Network = (() => {
     });
   }
 
-  function startGame() {
+  function startGame(excludeIds = []) {
     return new Promise((resolve, reject) => {
       if (!socket) return reject(new Error('Not connected'));
-      socket.emit('start-game', null, (response) => {
+      socket.emit('start-game', { excludeIds }, (response) => {
         if (response.success) resolve(response);
         else reject(new Error(response.error || 'Failed'));
       });
@@ -108,6 +108,16 @@ const Network = (() => {
       socket.emit('update-color', { color }, (response) => {
         if (response?.success) resolve(response);
         else reject(new Error(response?.error || 'Failed'));
+      });
+    });
+  }
+
+  function rejoinRoom(code, nickname, color) {
+    return new Promise((resolve, reject) => {
+      if (!socket) return reject(new Error('Not connected'));
+      socket.emit('rejoin-room', { code: code.toUpperCase(), nickname, color }, (response) => {
+        if (response.success) resolve(response);
+        else reject(new Error(response.error || 'Failed'));
       });
     });
   }
@@ -199,6 +209,7 @@ const Network = (() => {
     isConnected,
     createRoom,
     joinRoom,
+    rejoinRoom,
     startGame,
     submitGuess,
     playerReady,

@@ -132,6 +132,16 @@
   background: var(--bg-primary);
 }
 
+/* Transparent interaction-blocker shown for 1.5s at round start */
+.panorama-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  cursor: not-allowed;
+  background: transparent;
+}
+.panorama-lock.hidden { display: none; }
+
 .panorama-loading {
   position: absolute;
   inset: 0;

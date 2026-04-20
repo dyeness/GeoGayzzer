@@ -461,6 +461,14 @@
 .preload-zone-row label { color: var(--text-secondary); }
 .input-sm { font-size: var(--font-sm); padding: 4px 8px; }
 
+/* ── Login buttons row ── */
+.login-buttons { display: flex; gap: 8px; margin-top: 4px; }
+.login-buttons .btn { flex: 1; }
+
+/* ── Exclude panoramas row (lobby, host only) ── */
+.exclude-pano-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.exclude-pano-row input { width: 100%; padding: 6px 10px; font-size: var(--font-sm); background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); }
+
 /* ── Player color dot (lobby player list, leaderboards) ── */
 .player-color-dot {
   display: inline-block;

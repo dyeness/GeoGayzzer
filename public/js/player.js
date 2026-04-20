@@ -21,6 +21,25 @@ const Player = (() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
 
+  /** Register or update player from server auth response */
+  function loginSave(nickname, token) {
+    const existing = loadPlayer();
+    const player = {
+      nickname: nickname.trim(),
+      token,
+      createdAt: existing?.createdAt ?? new Date().toISOString(),
+      lastSeen: new Date().toISOString(),
+      color: existing?.color,
+    };
+    savePlayer(player);
+    return player;
+  }
+
+  /** Get the saved auth token, or null */
+  function getToken() {
+    return loadPlayer()?.token ?? null;
+  }
+
   /** Register or update a player nickname */
   function register(nickname) {
     const trimmed = nickname.trim().slice(0, 20);
@@ -121,5 +140,5 @@ const Player = (() => {
     };
   }
 
-  return { register, getNickname, getColor, setColor, logout, recordGame, getStats };
+  return { register, loginSave, getToken, getNickname, getColor, setColor, logout, recordGame, getStats };
 })();
