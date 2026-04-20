@@ -213,13 +213,19 @@ const UI = (() => {
     if (!container || !list) return;
     container.style.display = 'block';
 
-    list.innerHTML = leaderboard.map((p) => `
+    list.innerHTML = leaderboard.map((p, i) => {
+      const medal = ['🥇', '🥈', '🥉'][i] || '';
+      const profileUrl = '/profile/' + encodeURIComponent(p.nickname);
+      return `
       <li>
         ${p.color ? `<span class="player-color-dot" style="background:${p.color}"></span>` : ''}
-        <span class="lb-name">${escapeHtml(p.nickname)}</span>
+        <span class="lb-name">
+          ${medal ? `<span class="lb-medal">${medal}</span>` : ''}
+          <a href="${profileUrl}" class="lb-profile-link">${escapeHtml(p.nickname)}</a>
+        </span>
         <span class="lb-score">${p.totalScore.toLocaleString()} pts</span>
-      </li>
-    `).join('');
+      </li>`;
+    }).join('');
   }
 
   function hideMultiplayerLeaderboard() {

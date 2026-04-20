@@ -113,6 +113,10 @@
       document.getElementById('screen-stats')?.classList.remove('active');
       document.getElementById('screen-menu')?.classList.add('active');
     });
+    document.getElementById('btn-profile')?.addEventListener('click', () => {
+      const nick = Player.getNickname();
+      if (nick) window.location.href = '/profile/' + encodeURIComponent(nick);
+    });
     document.getElementById('btn-logout')?.addEventListener('click', handleLogout);
     document.getElementById('btn-lb-refresh')?.addEventListener('click', _loadLeaderboard);
 

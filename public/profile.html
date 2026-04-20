@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Профиль — GeoGAYZZER</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/animations.css" />
+  <link rel="stylesheet" href="/css/profile.css" />
+</head>
+<body>
+
+  <div class="profile-page">
+
+    <!-- ── Back button ─────────────────────────────────────── -->
+    <a href="/menu" class="profile-back btn btn-text">← Меню</a>
+
+    <!-- ── Header: avatar + nick + level bar ──────────────── -->
+    <div class="profile-header-card">
+      <div class="profile-avatar" id="profile-avatar">?</div>
+      <div class="profile-info">
+        <h1 class="profile-nickname" id="profile-nickname">—</h1>
+        <div class="profile-level-row">
+          <span class="level-badge" id="level-badge">Ур. 1</span>
+          <div class="xp-bar-wrap">
+            <div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div>
+          </div>
+          <span class="xp-label" id="xp-label">0 / 200 XP</span>
+        </div>
+        <div class="profile-meta" id="profile-meta">
+          <span id="meta-games">0 игр</span>
+          <span class="meta-sep">·</span>
+          <span id="meta-rounds">0 раундов</span>
+          <span class="meta-sep">·</span>
+          <span id="meta-total-xp">0 XP всего</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tabs ───────────────────────────────────────────── -->
+    <div class="profile-tabs">
+      <button class="tab-btn active" data-tab="records">🏅 Рекорды</button>
+      <button class="tab-btn" data-tab="achievements">🎖️ Достижения</button>
+      <button class="tab-btn" data-tab="lastgame">📋 Последняя игра</button>
+    </div>
+
+    <!-- ── Records tab ────────────────────────────────────── -->
+    <div class="tab-pane active" id="tab-records">
+      <div class="records-grid">
+        <div class="record-card">
+          <div class="record-icon">🏆</div>
+          <div class="record-value" id="rec-best-total">—</div>
+          <div class="record-label">Лучший счёт за матч</div>
+        </div>
+        <div class="record-card">
+          <div class="record-icon">🎯</div>
+          <div class="record-value" id="rec-best-round">—</div>
+          <div class="record-label">Лучший счёт за раунд</div>
+        </div>
+        <div class="record-card">
+          <div class="record-icon">🦅</div>
+          <div class="record-value" id="rec-best-accuracy">—</div>
+          <div class="record-label">Лучшая точность</div>
+        </div>
+        <div class="record-card">
+          <div class="record-icon">🥇</div>
+          <div class="record-value" id="rec-games-won">—</div>
+          <div class="record-label">Побед в матче</div>
+        </div>
+        <div class="record-card">
+          <div class="record-icon">⚡</div>
+          <div class="record-value" id="rec-rounds-won">—</div>
+          <div class="record-label">Побед в раунде</div>
+        </div>
+        <div class="record-card">
+          <div class="record-icon">🗡️</div>
+          <div class="record-value" id="rec-best-steals">—</div>
+          <div class="record-label">Лучшая кража (за раунд)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Achievements tab ───────────────────────────────── -->
+    <div class="tab-pane" id="tab-achievements">
+      <div class="achievements-header">
+        <span id="ach-total-label">Всего достижений: 0</span>
+      </div>
+      <div class="achievements-list" id="achievements-list">
+        <p class="empty-state">Нет достижений</p>
+      </div>
+    </div>
+
+    <!-- ── Last game tab ──────────────────────────────────── -->
+    <div class="tab-pane" id="tab-lastgame">
+      <div id="lastgame-content" class="lastgame-card">
+        <p class="empty-state">Игры ещё не было</p>
+      </div>
+    </div>
+
+    <!-- ── Not found ──────────────────────────────────────── -->
+    <div class="profile-not-found hidden" id="profile-not-found">
+      <div class="not-found-icon">🔍</div>
+      <h2>Профиль не найден</h2>
+      <p>Игрок ещё не сыграл ни одного матча.</p>
+      <a href="/menu" class="btn btn-primary">На главную</a>
+    </div>
+
+  </div>
+
+  <script src="/js/player.js"></script>
+  <script src="/js/app-profile.js"></script>
+</body>
+</html>

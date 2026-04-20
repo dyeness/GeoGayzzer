@@ -576,7 +576,16 @@
 }
 .final-leaderboard li:first-child { border-color: gold; }
 .final-leaderboard li:first-child::before { color: gold; }
-.lb-name { flex: 1; font-weight: 600; }
+.lb-name { flex: 1; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .lb-score { font-weight: 800; color: var(--accent-primary); }
+.lb-medal { font-size: 16px; }
+.lb-profile-link {
+  color: inherit;
+  text-decoration: none;
+}
+.lb-profile-link:hover {
+  text-decoration: underline;
+  color: var(--accent-primary, #4fc3f7);
+}
 
 .final-actions { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }

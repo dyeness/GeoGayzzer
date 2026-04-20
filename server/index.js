@@ -22,6 +22,7 @@ try {
 }
 
 const { createRoom, getRoom, deleteRoom, getRoomByPlayer, getAllRooms } = require('./game');
+const profiles = require('./profiles');
 
 /* ───── Scoring helpers (mirrored on server for multiplayer validation) ───── */
 
@@ -405,6 +406,7 @@ app.get('/login', (_req, res) => res.sendFile('login.html', { root: PUBLIC_DIR }
 app.get('/menu', (_req, res) => res.sendFile('menu.html', { root: PUBLIC_DIR }));
 app.get('/lobby/:code', (_req, res) => res.sendFile('lobby.html', { root: PUBLIC_DIR }));
 app.get('/game/:code', (_req, res) => res.sendFile('game.html', { root: PUBLIC_DIR }));
+app.get('/profile/:nickname', (_req, res) => res.sendFile('profile.html', { root: PUBLIC_DIR }));
 
 app.use(express.static(PUBLIC_DIR));
 
@@ -431,6 +433,17 @@ app.get('/api/locations', async (_req, res) => {
 // List open rooms (for room browser)
 app.get('/api/rooms', (_req, res) => {
   res.json(getAllRooms());
+});
+
+/* ── Profile API ── */
+app.get('/api/profile/:nickname', (req, res) => {
+  const prof = profiles.getProfile(req.params.nickname);
+  if (!prof) return res.status(404).json({ error: 'Профиль не найден' });
+  res.json(prof);
+});
+
+app.get('/api/profiles', (_req, res) => {
+  res.json(profiles.getAllProfiles());
 });
 
 /* ── Auth API ── */
@@ -568,6 +581,19 @@ app.get('/api/mapillary/images', (req, res) => {
 const io = new Server(server, {
   cors: { origin: '*' },
 });
+
+/** Call after game-over to update all players' profiles. */
+function finalizeGameProfiles(room) {
+  const leaderboard = room.getLeaderboard();
+  const gameProfileData = leaderboard.map((p, idx) => ({
+    nickname:       p.nickname,
+    totalScore:     p.totalScore,
+    matchPlacement: idx + 1,
+    playerCount:    leaderboard.length,
+    rounds:         room.totalRounds,
+  }));
+  profiles.updateAfterGame(gameProfileData);
+}
 
 io.on('connection', (socket) => {
   console.log(`⚡ Connected: ${socket.id}`);
@@ -725,6 +751,17 @@ io.on('connection', (socket) => {
         round: room.currentRound + 1,
         isLastRound: room.currentRound + 1 >= room.totalRounds,
       });
+
+      // Update player profiles (XP, records, achievements)
+      const roundProfileData = results.map((r, idx) => ({
+        nickname:       r.nickname,
+        score:          r.score,
+        distance:       r.distance,
+        stolen:         r.stolen || 0,
+        roundPlacement: idx + 1,
+        playerCount:    results.length,
+      }));
+      profiles.updateAfterRound(roundProfileData);
     }
   });
 
@@ -759,8 +796,7 @@ io.on('connection', (socket) => {
       const nextLoc = room.nextRound();
       if (!nextLoc) {
         // Game over — mark all used this session
-        markUsed((room.resolvedImages || []).map(r => r.id));
-        io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard() });
+        markUsed((room.resolvedImages || []).map(r => r.id));        finalizeGameProfiles(room);        io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard() });
       } else {
         const imageId = room.resolvedImages?.[room.currentRound]?.id ?? null;
         io.to(room.code).emit('round-start', {
@@ -782,6 +818,7 @@ io.on('connection', (socket) => {
     const nextLoc = room.nextRound();
     if (!nextLoc) {
       markUsed((room.resolvedImages || []).map(r => r.id));
+      finalizeGameProfiles(room);
       io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard() });
       return cb?.({ success: true, finished: true });
     }

@@ -9,4 +9,5 @@ Thumbs.db
 server/leaderboard.json
 server/game-history.json
 server/panorama-plays.json
+server/profiles.json
 server/accounts.json
