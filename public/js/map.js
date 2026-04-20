@@ -1,0 +1,375 @@
+/**
+ * GameMap — Leaflet map for guessing and result display.
+ * Manages the mini-map, guess marker, result polyline, and tile layers.
+ */
+
+const GameMap = (() => {
+  let miniMap = null;
+  let resultMap = null;
+  let guessMarker = null;
+  let resultLayers = [];  // polylines and markers on result map
+  let currentTileLayer = null;
+  let currentOverlayLayer = null;
+
+  /* ── Tile Layers ── */
+  const TILES = {
+    // OpenStreetMap — стандарт, видны страны, дороги, города
+    'osm': {
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      options: { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 },
+    },
+    // OSM Humanitarian — чёткие границы стран, яркие цвета
+    'osm-hot': {
+      url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      options: { attribution: '&copy; OpenStreetMap, Tiles by HOT', maxZoom: 19 },
+    },
+    // CartoDB Voyager — чистая карта с метками стран
+    'carto-voyager': {
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      options: { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 20 },
+    },
+    // CartoDB Dark — тёмная с метками
+    'carto-dark': {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      options: { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 20 },
+    },
+    // CartoDB Dark + только границы/метки поверх (overlay)
+    'carto-borders': {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+      options: { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 20 },
+      base: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    },
+    // Esri Satellite — спутник без подписей
+    'esri-satellite': {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      options: { attribution: '&copy; Esri', maxZoom: 18 },
+    },
+    // Esri World Street Map — детальные улицы + страны
+    'esri-street': {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      options: { attribution: '&copy; Esri', maxZoom: 18 },
+    },
+    // Esri National Geographic — красивый стиль с границами
+    'esri-natgeo': {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
+      options: { attribution: '&copy; Esri, National Geographic', maxZoom: 16 },
+    },
+  };
+
+  let currentTileKey = localStorage.getItem('gg_tile') || 'osm';
+
+  /* ── Custom Icons ── */
+  const guessIcon = L.divIcon({
+    className: 'custom-marker guess-marker-icon',
+    html: '<div style="width:16px;height:16px;background:#e94560;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+
+  const actualIcon = L.divIcon({
+    className: 'custom-marker actual-marker-icon',
+    html: '<div style="width:16px;height:16px;background:#2ecc71;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+
+  const COLLAPSED_W = 200, COLLAPSED_H = 150;
+  const SIZE_STEP = 80;
+
+  function getExpandedSize() {
+    const w = parseInt(localStorage.getItem('gg_map_w'), 10) || 400;
+    const h = parseInt(localStorage.getItem('gg_map_h'), 10) || 300;
+    return {
+      w: Math.min(700, Math.max(COLLAPSED_W + SIZE_STEP, w)),
+      h: Math.min(550, Math.max(COLLAPSED_H + SIZE_STEP, h)),
+    };
+  }
+
+  function saveExpandedSize(w, h) {
+    localStorage.setItem('gg_map_w', w);
+    localStorage.setItem('gg_map_h', h);
+  }
+
+  /* ── Mini-map ── */
+
+  function initMiniMap() {
+    if (miniMap) {
+      miniMap.remove();
+      miniMap = null;
+    }
+
+    const wrapper = document.getElementById('minimap-wrapper');
+    const outer   = document.querySelector('.minimap-outer');
+
+    // Start collapsed
+    if (wrapper) {
+      wrapper.style.width  = COLLAPSED_W + 'px';
+      wrapper.style.height = COLLAPSED_H + 'px';
+    }
+
+    // Hover: expand to saved size; leave: collapse back
+    if (outer && wrapper) {
+      outer.addEventListener('mouseenter', () => {
+        const { w, h } = getExpandedSize();
+        wrapper.style.width  = w + 'px';
+        wrapper.style.height = h + 'px';
+        setTimeout(() => miniMap?.invalidateSize(), 230);
+      });
+      outer.addEventListener('mouseleave', () => {
+        wrapper.style.width  = COLLAPSED_W + 'px';
+        wrapper.style.height = COLLAPSED_H + 'px';
+        setTimeout(() => miniMap?.invalidateSize(), 230);
+      });
+    }
+
+    miniMap = L.map('minimap', {
+      center: [20, 0],
+      zoom: 2,
+      zoomControl: false,
+      attributionControl: false,
+    });
+
+    setTileLayer(currentTileKey, miniMap);  // restore saved tile
+
+    // Click to place guess marker
+    miniMap.on('click', (e) => {
+      placeGuessMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    // Tile selector
+    const tileSelect = document.getElementById('tile-select');
+    if (tileSelect) {
+      tileSelect.value = currentTileKey;
+      tileSelect.addEventListener('change', (e) => {
+        setTileLayer(e.target.value, miniMap);
+      });
+    }
+
+    // − button: decrease expanded size
+    document.getElementById('minimap-size-down')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const { w, h } = getExpandedSize();
+      const newW = Math.max(COLLAPSED_W + SIZE_STEP, w - SIZE_STEP);
+      const newH = Math.max(COLLAPSED_H + SIZE_STEP, h - Math.round(SIZE_STEP * 0.75));
+      saveExpandedSize(newW, newH);
+      if (wrapper) {
+        wrapper.style.width  = newW + 'px';
+        wrapper.style.height = newH + 'px';
+        miniMap.invalidateSize();
+      }
+    });
+
+    // + button: increase expanded size
+    document.getElementById('minimap-size-up')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const { w, h } = getExpandedSize();
+      const newW = Math.min(700, w + SIZE_STEP);
+      const newH = Math.min(550, h + Math.round(SIZE_STEP * 0.75));
+      saveExpandedSize(newW, newH);
+      if (wrapper) {
+        wrapper.style.width  = newW + 'px';
+        wrapper.style.height = newH + 'px';
+        miniMap.invalidateSize();
+      }
+    });
+
+    return miniMap;
+  }
+
+  function setTileLayer(key, map) {
+    if (!TILES[key]) return;
+    currentTileKey = key;
+    localStorage.setItem('gg_tile', key);  // persist choice
+
+    // Remove all existing tile layers
+    if (currentTileLayer) {
+      map.removeLayer(currentTileLayer);
+      currentTileLayer = null;
+    }
+    if (currentOverlayLayer) {
+      map.removeLayer(currentOverlayLayer);
+      currentOverlayLayer = null;
+    }
+
+    const cfg = TILES[key];
+
+    // Special case: satellite base + labels overlay
+    if (cfg.base) {
+      const baseLayer = L.tileLayer(cfg.base, { attribution: '&copy; Esri', maxZoom: 18 });
+      baseLayer.addTo(map);
+      currentTileLayer = baseLayer;
+
+      const overlay = L.tileLayer(cfg.url, cfg.options);
+      overlay.addTo(map);
+      currentOverlayLayer = overlay;
+    } else {
+      currentTileLayer = L.tileLayer(cfg.url, cfg.options);
+      currentTileLayer.addTo(map);
+    }
+  }
+
+  function placeGuessMarker(lat, lng) {
+    if (!miniMap) return;
+
+    if (guessMarker) {
+      guessMarker.setLatLng([lat, lng]);
+    } else {
+      guessMarker = L.marker([lat, lng], { icon: guessIcon, draggable: true }).addTo(miniMap);
+      guessMarker.on('dragend', () => {
+        const pos = guessMarker.getLatLng();
+        GameState.set('currentGuess', { lat: pos.lat, lng: pos.lng });
+      });
+    }
+
+    GameState.set('currentGuess', { lat, lng });
+
+    // Enable guess button
+    const btn = document.getElementById('btn-guess');
+    if (btn) btn.disabled = false;
+  }
+
+  function clearGuessMarker() {
+    if (guessMarker && miniMap) {
+      miniMap.removeLayer(guessMarker);
+    }
+    guessMarker = null;
+    GameState.set('currentGuess', null);
+
+    const btn = document.getElementById('btn-guess');
+    if (btn) btn.disabled = true;
+  }
+
+  /** Reset mini-map to default view for a new round */
+  function resetMiniMap() {
+    clearGuessMarker();
+    if (miniMap) {
+      miniMap.setView([20, 0], 2);
+    }
+  }
+
+  /* ── Result Map ── */
+
+  function initResultMap() {
+    if (resultMap) {
+      resultMap.remove();
+      resultMap = null;
+    }
+
+    resultMap = L.map('result-map', {
+      center: [20, 0],
+      zoom: 2,
+      zoomControl: true,
+      attributionControl: true,
+    });
+
+    const tileConfig = TILES[currentTileKey] || TILES['osm'];
+    // Use base layer if present (e.g. satellite+labels)
+    if (tileConfig.base) {
+      L.tileLayer(tileConfig.base, { attribution: '&copy; Esri', maxZoom: 18 }).addTo(resultMap);
+      L.tileLayer(tileConfig.url, tileConfig.options).addTo(resultMap);
+    } else {
+      L.tileLayer(tileConfig.url, tileConfig.options).addTo(resultMap);
+    }
+
+    return resultMap;
+  }
+
+  /**
+   * Show the result on the result map: actual location, guess, and polyline.
+   */
+  function showResult(actualLat, actualLng, guessLat, guessLng) {
+    if (!resultMap) initResultMap();
+
+    // Clear previous layers
+    resultLayers.forEach((layer) => resultMap.removeLayer(layer));
+    resultLayers = [];
+
+    // Actual location marker
+    const actualMarker = L.marker([actualLat, actualLng], { icon: actualIcon }).addTo(resultMap);
+    actualMarker.bindPopup('📍 Правильное место').openPopup();
+    resultLayers.push(actualMarker);
+
+    // Guess marker
+    const guessMarkerResult = L.marker([guessLat, guessLng], { icon: guessIcon }).addTo(resultMap);
+    guessMarkerResult.bindPopup('🎯 Твоя догадка');
+    resultLayers.push(guessMarkerResult);
+
+    // Polyline connecting the two
+    const polyline = L.polyline(
+      [[actualLat, actualLng], [guessLat, guessLng]],
+      { color: '#e94560', weight: 3, dashArray: '8, 8', opacity: 0.8 }
+    ).addTo(resultMap);
+    resultLayers.push(polyline);
+
+    // Fit bounds to show both points
+    const bounds = L.latLngBounds(
+      [actualLat, actualLng],
+      [guessLat, guessLng]
+    ).pad(0.3);
+    resultMap.fitBounds(bounds);
+  }
+
+  /**
+   * Plot every player's guess on the result map as a labelled marker.
+   * Call AFTER showResult() — skips the current player (already shown by showResult).
+   * @param {Array}  results    - [{nickname, guess:{lat,lng}, score, distance}, ...]
+   * @param {string} myNickname - Current player's nickname
+   */
+  function showMultiplayerGuesses(results, myNickname) {
+    if (!resultMap) return;
+
+    // Colour palette for other players' markers
+    const palette = ['#f39c12', '#9b59b6', '#1abc9c', '#3498db', '#e67e22', '#e91e63'];
+    let colIdx = 0;
+
+    for (const result of results) {
+      if (result.nickname === myNickname) continue;  // current player shown by showResult()
+      if (!result.guess) continue;
+
+      const { lat, lng } = result.guess;
+      const color = palette[colIdx++ % palette.length];
+
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="width:14px;height:14px;background:${color};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      });
+
+      const dist = result.distance != null
+        ? Scoring.formatDistance(result.distance)
+        : '—';
+      const marker = L.marker([lat, lng], { icon })
+        .bindTooltip(
+          `<strong>${result.nickname}</strong><br>+${result.score.toLocaleString()} · ${dist}`,
+          { permanent: false, direction: 'top', offset: [0, -8] }
+        )
+        .addTo(resultMap);
+      resultLayers.push(marker);
+    }
+  }
+
+  /** Invalidate map sizes (call after showing/hiding containers) */
+  function invalidateAll() {
+    setTimeout(() => {
+      miniMap?.invalidateSize();
+      resultMap?.invalidateSize();
+    }, 100);
+  }
+
+  /** Invalidate only the result map (called when result screen is shown) */
+  function invalidateResultMap() {
+    resultMap?.invalidateSize();
+  }
+
+  return {
+    initMiniMap,
+    resetMiniMap,
+    clearGuessMarker,
+    initResultMap,
+    showResult,
+    showMultiplayerGuesses,
+    invalidateAll,
+    invalidateResultMap,
+  };
+})();

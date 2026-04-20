@@ -1,0 +1,8 @@
+node_modules/
+config/api.js
+.env
+dist/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

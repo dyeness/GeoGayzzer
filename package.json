@@ -1,0 +1,16 @@
+{
+  "name": "geoguessr-local",
+  "version": "1.0.0",
+  "description": "GeoGuessr-style multiplayer game with Mapillary street-level imagery and Leaflet maps",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": ["geoguessr", "mapillary", "leaflet", "multiplayer"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
+}
