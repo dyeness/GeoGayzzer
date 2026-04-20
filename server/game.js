@@ -101,11 +101,17 @@ class GameRoom {
     return this.roundGuesses.size >= this.players.size;
   }
 
-  /** Finalize the current round — store scores and return results */
+  /** Finalize the current round — store scores and return results.
+   *  Applies "steal" mechanic: if two guesses are within STEAL_RADIUS km,
+   *  the closer player takes STEAL_FRACTION of the farther player's score.
+   */
   finalizeRound(scoringFn) {
-    const location = this.getCurrentLocation();
-    const results = [];
+    const location  = this.getCurrentLocation();
+    const STEAL_RADIUS   = 50;   // km — trigger distance between guesses
+    const STEAL_FRACTION = 0.20; // fraction of loser's score taken
 
+    // ── Step 1: base scores ──
+    const entries = [];
     for (const [socketId, player] of this.players) {
       const guess = this.roundGuesses.get(socketId);
       let distance = null;
@@ -113,25 +119,52 @@ class GameRoom {
 
       if (guess) {
         distance = scoringFn.haversine(location.lat, location.lng, guess.lat, guess.lng);
-        score = scoringFn.calculateScore(distance);
+        score    = scoringFn.calculateScore(distance);
       }
 
+      entries.push({ socketId, player, guess, distance, baseScore: score, score, stolen: 0 });
+    }
+
+    // ── Step 2: steal — all pairs within radius ──
+    const guessers = entries.filter(e => e.guess && e.score > 0);
+    for (let i = 0; i < guessers.length; i++) {
+      for (let j = i + 1; j < guessers.length; j++) {
+        const a = guessers[i];
+        const b = guessers[j];
+        const guessDist = scoringFn.haversine(
+          a.guess.lat, a.guess.lng, b.guess.lat, b.guess.lng
+        );
+        if (guessDist <= STEAL_RADIUS) {
+          const [winner, loser] = a.distance <= b.distance ? [a, b] : [b, a];
+          const amount = Math.floor(loser.score * STEAL_FRACTION);
+          if (amount > 0) {
+            winner.score  += amount;
+            winner.stolen += amount;
+            loser.score    = Math.max(0, loser.score - amount);
+          }
+        }
+      }
+    }
+
+    // ── Step 3: commit to player state ──
+    const results = [];
+    for (const { socketId, player, guess, distance, score, stolen } of entries) {
       player.scores.push(score);
       player.totalScore += score;
       player.guesses.push(guess || null);
 
       results.push({
         socketId,
-        nickname: player.nickname,
-        color: player.color,
+        nickname:   player.nickname,
+        color:      player.color,
         guess,
         distance,
         score,
+        stolen,
         totalScore: player.totalScore,
       });
     }
 
-    // Sort by score descending
     results.sort((a, b) => b.score - a.score);
     return results;
   }

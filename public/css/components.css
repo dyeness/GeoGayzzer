@@ -381,6 +381,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  max-width: 280px;
 }
 .color-swatch {
   width: 26px;

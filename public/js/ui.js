@@ -153,12 +153,18 @@ const UI = (() => {
     if (!container || !list) return;
     container.style.display = 'block';
 
-    list.innerHTML = results.map((r) => `
-      <li>
-        <span>${escapeHtml(r.nickname)}</span>
-        <span>${r.score.toLocaleString()} pts (${r.distance !== null ? Scoring.formatDistance(r.distance) : '—'})</span>
-      </li>
-    `).join('');
+    list.innerHTML = results.map((r) => {
+      const stealBadge = r.stolen > 0
+        ? `<span class="steal-badge">+${r.stolen.toLocaleString()} 🗡️</span>`
+        : '';
+      const dist = r.distance !== null ? Scoring.formatDistance(r.distance) : '—';
+      return `
+        <li>
+          <span class="result-player-dot" style="background:${r.color || '#4fc3f7'}"></span>
+          <span class="result-player-nick">${escapeHtml(r.nickname)}</span>
+          <span class="result-player-score">${r.score.toLocaleString()} pts (${dist})${stealBadge}</span>
+        </li>`;
+    }).join('');
   }
 
   function hideMultiplayerRoundResults() {
