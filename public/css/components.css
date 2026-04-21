@@ -541,3 +541,39 @@
   margin-left: 4px;
 }
 
+/* ── ELO change badge (final leaderboard, used in game.html) ── */
+.lb-elo {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.lb-elo-cur {
+  opacity: 0.7;
+  font-weight: 400;
+}
+.lb-avg-elo {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-sm);
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 10px;
+  letter-spacing: 0.3px;
+}
+.elo-gain {
+  color: #4caf50;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(76, 175, 80, 0.8), 0 0 20px rgba(76, 175, 80, 0.4);
+}
+.elo-loss {
+  color: #f44336;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(244, 67, 54, 0.8), 0 0 20px rgba(244, 67, 54, 0.4);
+}
+.elo-zero {
+  color: #f5c518;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(245, 197, 24, 0.7);
+}
+
