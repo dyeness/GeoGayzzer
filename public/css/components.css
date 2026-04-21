@@ -564,17 +564,17 @@
 .elo-gain {
   color: #4caf50;
   font-weight: 700;
-  text-shadow: 0 0 8px rgba(76, 175, 80, 0.8), 0 0 20px rgba(76, 175, 80, 0.4);
+  text-shadow: 0 0 4px rgba(76, 175, 80, 0.8), 0 0 20px rgba(76, 175, 80, 0.4);
 }
 .elo-loss {
   color: #f44336;
   font-weight: 700;
-  text-shadow: 0 0 8px rgba(244, 67, 54, 0.8), 0 0 20px rgba(244, 67, 54, 0.4);
+  text-shadow: 0 0 4px rgba(244, 67, 54, 0.8), 0 0 20px rgba(244, 67, 54, 0.4);
 }
 .elo-zero {
   color: #f5c518;
   font-weight: 700;
-  text-shadow: 0 0 8px rgba(245, 197, 24, 0.7);
+  text-shadow: 0 0 4px rgba(245, 197, 24, 0.7);
 }
 
 /* ══════════════════════════════════════════════════════════
