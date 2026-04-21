@@ -232,12 +232,19 @@ const UI = (() => {
     showScreen('final');
   }
 
-  function showMultiplayerLeaderboard(leaderboard, eloChanges = {}) {
+  function showMultiplayerLeaderboard(leaderboard, eloChanges = {}, avgElo) {
     const container = document.getElementById('final-leaderboard');
     const list = document.getElementById('final-leaderboard-list');
 
     if (!container || !list) return;
     container.style.display = 'block';
+
+    // Average ELO subtitle
+    const heading = container.querySelector('h3');
+    if (heading) {
+      const avgPart = avgElo ? ` <span class="lb-avg-elo">Ср. ЭЛО: ${avgElo}</span>` : '';
+      heading.innerHTML = `🏅 Таблица лидеров${avgPart}`;
+    }
 
     list.innerHTML = leaderboard.map((p, i) => {
       const medal = ['\ud83e\udd47', '\ud83e\udd48', '\ud83e\udd49'][i] || '';
@@ -245,9 +252,12 @@ const UI = (() => {
       const delta = eloChanges[p.nickname];
       let eloHtml = '';
       if (delta !== undefined) {
-        const cls  = delta >= 0 ? 'elo-gain' : 'elo-loss';
-        const sign = delta >= 0 ? '+' : '';
-        eloHtml = `<span class="lb-elo ${cls}">${sign}${delta} \u042d\u041b\u041e</span>`;
+        let cls, sign;
+        if (delta > 0)      { cls = 'elo-gain'; sign = '+'; }
+        else if (delta < 0) { cls = 'elo-loss'; sign = ''; }
+        else                { cls = 'elo-zero'; sign = ''; }
+        const curElo = p.elo != null ? ` → <span class="lb-elo-cur">${p.elo}</span>` : '';
+        eloHtml = `<span class="lb-elo ${cls}">${sign}${delta}${curElo} ЭЛО</span>`;
       }
       return `
       <li>
@@ -269,8 +279,41 @@ const UI = (() => {
 
   /* ── Players Screen ── */
 
-  function showPlayers() {
+  async function showStats() {
     showScreen('stats');
+    const list = document.getElementById('players-list');
+    if (!list) return;
+    list.innerHTML = '<p class="menu-lb-empty">Загрузка...</p>';
+    try {
+      const profiles = await fetch('/api/profiles').then(r => r.json());
+      // Sort by ELO desc
+      profiles.sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000));
+      if (!profiles.length) {
+        list.innerHTML = '<p class="menu-lb-empty">Нет игроков</p>';
+        return;
+      }
+      list.innerHTML = profiles.map((p, i) => {
+        const elo = p.elo ?? 1000;
+        const eloCls = elo >= 1200 ? 'elo-tier-gold' : elo >= 1100 ? 'elo-tier-silver' : elo < 950 ? 'elo-tier-bronze' : '';
+        const profileUrl = '/profile/' + encodeURIComponent(p.nickname);
+        const avatarLetter = p.nickname.charAt(0).toUpperCase();
+        const rankDisplay = i < 3
+          ? ['🥇', '🥈', '🥉'][i]
+          : `${i + 1}`;
+        const prestige = p.prestige > 0 ? `<span class="player-row-prestige">${p.prestige}💎</span>` : '';
+        return `<a href="${profileUrl}" class="player-row" style="text-decoration:none;color:inherit;">
+          <span class="player-row-rank${i < 3 ? '-medal' : ''}">${rankDisplay}</span>
+          <span class="player-row-avatar">${escapeHtml(avatarLetter)}</span>
+          <span class="player-row-info">
+            <span class="player-row-nick">${escapeHtml(p.nickname)}${prestige}</span>
+            <span class="player-row-sub">Ур. ${p.level} · ${p.gamesPlayed} игр · ${(p.totalXp || 0).toLocaleString()} XP</span>
+          </span>
+          <span class="player-row-elo ${eloCls}">${elo.toLocaleString()} ЭЛО</span>
+        </a>`;
+      }).join('');
+    } catch {
+      list.innerHTML = '<p class="menu-lb-empty">Ошибка загрузки</p>';
+    }
   }
 
   /* ── Join Modal ── */
@@ -459,7 +502,7 @@ const UI = (() => {
     showReadyStatus,
     hideReadyStatus,
     showReadyButton,
-    showPlayers,
+    showStats,
     showJoinError,
     hideJoinError,
     showRoomList,

@@ -296,7 +296,7 @@
     Player.recordGame(GameState.get('totalScore'), GameState.get('roundScores'), 'multiplayer');
     _submitGameEnd();
     UI.showFinalResults();
-    UI.showMultiplayerLeaderboard(data.leaderboard, data.eloChanges || {});
+    UI.showMultiplayerLeaderboard(data.leaderboard, data.eloChanges || {}, data.avgElo);
     UI.hideReadyStatus();
   }
 
