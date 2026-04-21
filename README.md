@@ -1,4 +1,13 @@
+<div align="right">
+  <a href="README.en.md">🇬🇧 English version</a>
+</div>
+
 # 🌍 GeoGAYZZER
+
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E=18.0-brightgreen)](https://nodejs.org/)
+[![Мультиплеер](https://img.shields.io/badge/мультиплеер-есть-blue)](#возможности)
+[![Mapillary](https://img.shields.io/badge/панорамы-Mapillary-blueviolet)](https://www.mapillary.com/)
 
 > Многопользовательская игра в угадывание местоположения по уличным панорамам. Смотри на Mapillary-панораму — угадай, где ты находишься. Побеждает тот, кто ближе к цели.
 
