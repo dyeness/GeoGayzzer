@@ -107,7 +107,7 @@ class GameRoom {
    */
   finalizeRound(scoringFn) {
     const location  = this.getCurrentLocation();
-    const STEAL_RADIUS   = 50;   // km — trigger distance between guesses
+    const STEAL_RADIUS   = 100;  // km — trigger distance between guesses
     const STEAL_FRACTION = 0.20; // fraction of loser's score taken
 
     // ── Step 1: base scores ──

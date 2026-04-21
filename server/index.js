@@ -731,6 +731,7 @@ io.on('connection', (socket) => {
         totalRounds: room.totalRounds,
         location: { lat: firstLocation.lat, lng: firstLocation.lng },
         imageId: locations[0].imageId ?? null,
+        players: room.getPlayerList(),
       });
       console.log(`Game started in room ${room.code} [imageId=${locations[0].imageId ?? 'none'}]`);
     } catch (err) {
@@ -749,9 +750,9 @@ io.on('connection', (socket) => {
     if (!ok) return cb({ success: false, error: 'Уже отгадано' });
 
     cb({ success: true });
-    // Notify others that a player has guessed (include nickname+color for live map)
+    // Notify ALL players (including the guesser) that a player has guessed
     const guessingPlayer = room.players.get(socket.id);
-    socket.to(room.code).emit('player-guessed', {
+    io.to(room.code).emit('player-guessed', {
       playersGuessed: room.roundGuesses.size,
       totalPlayers: room.players.size,
       nickname: guessingPlayer?.nickname,
@@ -790,6 +791,11 @@ io.on('connection', (socket) => {
   socket.on('update-color', ({ color }, cb) => {
     const room = getRoomByPlayer(socket.id);
     if (!room) return cb?.({ success: false });
+    // Reject if another player already holds this color
+    const takenByOther = [...room.players.entries()].some(
+      ([id, p]) => id !== socket.id && p.color === color
+    );
+    if (takenByOther) return cb?.({ success: false, error: 'Цвет уже занят другим игроком' });
     const player = room.players.get(socket.id);
     if (player) player.color = color || '#4fc3f7';
     cb?.({ success: true });
@@ -825,6 +831,7 @@ io.on('connection', (socket) => {
           totalRounds: room.totalRounds,
           location: { lat: nextLoc.lat, lng: nextLoc.lng },
           imageId,
+          players: room.getPlayerList(),
         });
       }
     }

@@ -245,6 +245,32 @@ function updateAfterRound(roundResults) {
   saveProfiles();
 }
 
+/* ── ELO calculation (pairwise multi-player) ─────────────────────────────── */
+
+/**
+ * @param {Array<{nickname, elo, placement}>} players - sorted best→worst not required
+ * @returns {{ [nickname]: number }} - ELO delta per player (can be negative)
+ */
+function calcEloChanges(players) {
+  const K = 32;
+  const changes = {};
+  players.forEach(p => { changes[p.nickname] = 0; });
+
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      const a = players[i], b = players[j];
+      // Expected score for A vs B
+      const ea = 1 / (1 + Math.pow(10, (b.elo - a.elo) / 400));
+      // Actual: lower placement = better result (1st place beats 2nd)
+      const sa = a.placement < b.placement ? 1 : a.placement > b.placement ? 0 : 0.5;
+      const da = Math.round(K * (sa - ea));
+      changes[a.nickname] += da;
+      changes[b.nickname] -= da;
+    }
+  }
+  return changes;
+}
+
 /* ── Update after game ends ──────────────────────────────────────────────── */
 
 /**
