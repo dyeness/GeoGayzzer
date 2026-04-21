@@ -50,7 +50,7 @@
           ? `<span class="player-row-rank-medal">${medals[i]}</span>`
           : `<span class="player-row-rank">${i + 1}</span>`;
         const elo = p.elo ?? 1000;
-        const eloCls = elo >= 1200 ? 'elo-tier-gold' : elo >= 1100 ? 'elo-tier-silver' : elo < 950 ? 'elo-tier-bronze' : '';
+        const eloCls = elo >= 1350 ? 'elo-tier-gold' : elo >= 1150 ? 'elo-tier-silver' : elo < 1000 ? 'elo-tier-bronze' : '';
         const delay = i * 55;
         return `
         <a href="/profile/${encodeURIComponent(p.nickname)}" class="player-row" style="--card-delay:${delay}ms;">
