@@ -59,18 +59,21 @@ const GameMap = (() => {
   let currentTileKey = localStorage.getItem('gg_tile') || 'osm';
 
   /* ── Custom Icons ── */
-  const guessIcon = L.divIcon({
-    className: 'custom-marker guess-marker-icon',
-    html: '<div style="width:16px;height:16px;background:#e94560;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);"></div>',
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-  });
+  function makeGuessIcon(color) {
+    const c = color || '#e94560';
+    return L.divIcon({
+      className: 'custom-marker guess-marker-icon',
+      html: `<div style="width:16px;height:16px;background:${c};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);"></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+  }
 
   const actualIcon = L.divIcon({
     className: 'custom-marker actual-marker-icon',
-    html: '<div style="width:16px;height:16px;background:#2ecc71;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);"></div>',
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
+    html: '<svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.65));display:block;"><polygon points="11,2 20,20 2,20" fill="#2ecc71" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>',
+    iconSize: [22, 22],
+    iconAnchor: [11, 18],
   });
 
   const COLLAPSED_W = 200, COLLAPSED_H = 150;
@@ -217,7 +220,7 @@ const GameMap = (() => {
     if (guessMarker) {
       guessMarker.setLatLng([lat, lng]);
     } else {
-      guessMarker = L.marker([lat, lng], { icon: guessIcon, draggable: true }).addTo(miniMap);
+      guessMarker = L.marker([lat, lng], { icon: makeGuessIcon(Player.getColor()), draggable: true }).addTo(miniMap);
       guessMarker.on('dragend', () => {
         const pos = guessMarker.getLatLng();
         GameState.set('currentGuess', { lat: pos.lat, lng: pos.lng });
@@ -295,7 +298,7 @@ const GameMap = (() => {
     resultLayers.push(actualMarker);
 
     // Guess marker
-    const guessMarkerResult = L.marker([guessLat, guessLng], { icon: guessIcon }).addTo(resultMap);
+    const guessMarkerResult = L.marker([guessLat, guessLng], { icon: makeGuessIcon(Player.getColor()) }).addTo(resultMap);
     guessMarkerResult.bindPopup('🎯 Твоя догадка');
     resultLayers.push(guessMarkerResult);
 
