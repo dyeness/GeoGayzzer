@@ -1,5 +1,5 @@
 ﻿/**
- * GeoGuessr Server
+ * GeoGAYZZER Server
  * Express + Socket.IO for serving the game and handling multiplayer.
  */
 
@@ -896,7 +896,7 @@ process.on('uncaughtException', (err) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🌍 GeoGuessr Server running on port ${PORT}`);
+  console.log(`\n🌍 GeoGAYZZER Server running on port ${PORT}`);
   console.log('─'.repeat(45));
 
   // Show all network interfaces for Radmin VPN

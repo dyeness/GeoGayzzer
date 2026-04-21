@@ -3,8 +3,8 @@
  */
 
 const Player = (() => {
-  const STORAGE_KEY = 'geoguessr_player';
-  const STATS_KEY   = 'geoguessr_stats';
+  const STORAGE_KEY = 'geogayzzer_player';
+  const STATS_KEY   = 'geogayzzer_stats';
 
   /** Load player data from localStorage */
   function loadPlayer() {
