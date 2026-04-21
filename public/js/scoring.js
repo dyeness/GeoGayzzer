@@ -31,7 +31,7 @@ const Scoring = (() => {
    * Decay constant of 2000 km means ~1839 pts at 2000 km.
    */
   function calculateScore(distanceKm) {
-    const score = MAX_POINTS * Math.exp(-distanceKm / 2000);
+    const score = MAX_POINTS * Math.exp(-distanceKm / 1000);
     return Math.round(score);
   }
 
