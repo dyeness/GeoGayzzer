@@ -13,12 +13,29 @@
     });
   }
 
+  /**
+   * Mark swatches taken by other players as disabled.
+   * @param {Array} players - full player list from server
+   */
+  function _updateTakenSwatches(players) {
+    const myNick = GameState.get('nickname');
+    const takenColors = new Set(
+      players.filter(p => p.nickname !== myNick).map(p => p.color)
+    );
+    document.querySelectorAll('.color-swatch').forEach(s => {
+      const taken = takenColors.has(s.dataset.color);
+      s.classList.toggle('taken', taken);
+    });
+  }
+
   function _bindNetworkEvents() {
     Network.on('onPlayerJoined', (data) => {
       UI.updateLobby(roomCode, data.players, GameState.get('isHost'));
+      _updateTakenSwatches(data.players);
     });
     Network.on('onPlayerLeft', (data) => {
       UI.updateLobby(roomCode, data.players, GameState.get('isHost'));
+      _updateTakenSwatches(data.players);
     });
     // Game started — navigate everyone to game page
     Network.on('onRoundStart', () => {
@@ -40,6 +57,7 @@
     document.getElementById('color-swatches')?.addEventListener('click', (e) => {
       const swatch = e.target.closest('.color-swatch');
       if (!swatch) return;
+      if (swatch.classList.contains('taken')) return; // color taken by another player
       const color = swatch.dataset.color;
       GameState.set('playerColor', color);
       Player.setColor(color);
@@ -99,6 +117,7 @@
 
       UI.updateLobby(roomCode, data.players, data.isHost);
       _restoreColor();
+      _updateTakenSwatches(data.players);
 
     } catch (err) {
       console.warn('[lobby] Failed to join room:', err.message);

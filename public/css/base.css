@@ -21,6 +21,7 @@ html, body {
 }
 
 /* ─── Scanlines ───────────────────────────── */
+body.no-scanlines::after { display: none; }
 body::after {
   content: '';
   position: fixed;
