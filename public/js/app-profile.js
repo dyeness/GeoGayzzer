@@ -101,15 +101,8 @@
     document.getElementById('meta-total-xp').textContent = `${fmt(prof.totalXp)} XP всего`;
     const eloEl = document.getElementById('meta-elo');
     if (eloEl) {
-      const eloVal    = prof.elo ?? 1000;
-      const eloChange = prof.eloChange ?? 0;
-      if (eloChange !== 0) {
-        const sign = eloChange > 0 ? '+' : '';
-        const cls  = eloChange > 0 ? 'elo-gain' : 'elo-loss';
-        eloEl.innerHTML = `${fmt(eloVal)} ЭЛО <span class="${cls}">(${sign}${eloChange})</span>`;
-      } else {
-        eloEl.textContent = `${fmt(eloVal)} ЭЛО`;
-      }
+      const eloVal = prof.elo ?? 1000;
+      eloEl.textContent = `${fmt(eloVal)} ЭЛО`;
     }
 
     /* Records tab */
@@ -125,6 +118,9 @@
 
     /* All achievements tab */
     renderAllAchievements(prof.achievements);
+
+    /* Game history tab */
+    renderGameHistory(prof.gameHistory || []);
 
     /* Last game tab */
     renderLastGame(prof.lastGame);
@@ -198,6 +194,67 @@
     } catch {
       container.innerHTML = '<p class="empty-state">Ошибка загрузки</p>';
     }
+  }
+
+  function renderGameHistory(history) {
+    const container = document.getElementById('game-history-list');
+    if (!container) return;
+    if (!history || history.length === 0) {
+      container.innerHTML = '<p class="empty-state">История игр пуста</p>';
+      return;
+    }
+
+    container.innerHTML = history.map((g, idx) => {
+      const medal = g.placement === 1 ? '🥇' : g.placement === 2 ? '🥈' : g.placement === 3 ? '🥉' : `${g.placement}-е`;
+      const eloCls = g.eloDelta > 0 ? 'elo-gain' : g.eloDelta < 0 ? 'elo-loss' : 'elo-zero';
+      const eloSign = g.eloDelta > 0 ? '+' : '';
+      const eloStr = g.eloDelta !== undefined
+        ? `<span class="${eloCls}">${eloSign}${g.eloDelta} ЭЛО</span>`
+        : '';
+      const newEloStr = g.newElo != null ? ` → ${g.newElo}` : '';
+
+      const opponents = (g.opponents || []).map(op => {
+        const opMedal = op.matchPlacement === 1 ? '🥇' : op.matchPlacement === 2 ? '🥈' : op.matchPlacement === 3 ? '🥉' : `${op.matchPlacement}.`;
+        const profileLink = `/profile/${encodeURIComponent(op.nickname)}`;
+        return `<div class="gh-opponent">
+          <span class="gh-opp-place">${opMedal}</span>
+          <a href="${profileLink}" class="gh-opp-name">${escapeHtml(op.nickname)}</a>
+          <span class="gh-opp-score">${op.totalScore.toLocaleString()} pts</span>
+        </div>`;
+      }).join('');
+
+      return `<div class="gh-card" data-idx="${idx}">
+        <div class="gh-header" role="button" tabindex="0">
+          <span class="gh-date">${fmtDate(g.date)}</span>
+          <span class="gh-place">${medal}</span>
+          <span class="gh-score">${g.totalScore.toLocaleString()} pts</span>
+          <span class="gh-elo">${eloStr}${newEloStr ? `<span class="gh-new-elo">${newEloStr}</span>` : ''}</span>
+          <span class="gh-chevron">▼</span>
+        </div>
+        <div class="gh-body" hidden>
+          <div class="gh-details">
+            <span>👥 ${g.players} игроков</span>
+            <span>🔄 ${g.rounds} раундов</span>
+          </div>
+          ${opponents ? `<div class="gh-opponents">${opponents}</div>` : '<p class="gh-no-opponents">Соло-игра</p>'}
+        </div>
+      </div>`;
+    }).join('');
+
+    // Toggle expand on click/enter
+    container.querySelectorAll('.gh-header').forEach(header => {
+      const toggle = () => {
+        const card = header.parentElement;
+        const body = card.querySelector('.gh-body');
+        const chevron = header.querySelector('.gh-chevron');
+        const open = !body.hidden;
+        body.hidden = open;
+        card.classList.toggle('gh-open', !open);
+        if (chevron) chevron.textContent = open ? '▼' : '▲';
+      };
+      header.addEventListener('click', toggle);
+      header.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') toggle(); });
+    });
   }
 
   function renderLastGame(game) {
