@@ -186,6 +186,14 @@
   display: block;
 }
 
+/* Scrollable achievement panes */
+#tab-achievements,
+#tab-allachievements {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 /* ── Records grid ─────────────────────────────────────────────────── */
 
 .records-grid {
@@ -499,19 +507,20 @@
 .elo-gain {
   color: #4caf50;
   font-weight: 700;
+  text-shadow: 0 0 8px rgba(76, 175, 80, 0.8), 0 0 20px rgba(76, 175, 80, 0.4);
 }
 .elo-loss {
   color: #f44336;
   font-weight: 700;
+  text-shadow: 0 0 8px rgba(244, 67, 54, 0.8), 0 0 20px rgba(244, 67, 54, 0.4);
+}
+.elo-zero {
+  color: #f5c518;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(245, 197, 24, 0.7);
 }
 
-/* ── Scrollable all-achievements tab ─────────────────────────────────────── */
-
-#tab-allachievements {
-  max-height: 62vh;
-  overflow-y: auto;
-  padding-right: 4px;
-}
+/* ── Scrollable all-achievements tab (merged into .tab-pane rule above) ─── */
 
 /* Lobby player enrichment */
 .lobby-player-name {
@@ -531,7 +540,11 @@
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
+  letter-spacing: 0.3px;
 }
+.lb-elo.elo-gain { color: #4caf50; text-shadow: 0 0 8px rgba(76,175,80,0.8), 0 0 20px rgba(76,175,80,0.4); }
+.lb-elo.elo-loss { color: #f44336; text-shadow: 0 0 8px rgba(244,67,54,0.8), 0 0 20px rgba(244,67,54,0.4); }
+.lb-elo.elo-zero { color: #f5c518; text-shadow: 0 0 8px rgba(245,197,24,0.7); }
 
 /* Prestige small label (lobby, players list) */
 .prestige-sm {
@@ -708,3 +721,100 @@
   font-size: var(--font-sm);
   text-decoration: none;
 }
+
+/* ── Player row ELO badge ─────────────────────────────────────────────────── */
+
+.player-row-elo {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.player-row-elo.elo-tier-gold   { color: #f5c518; text-shadow: 0 0 10px rgba(245,197,24,0.6); }
+.player-row-elo.elo-tier-silver { color: #94a3b8; text-shadow: 0 0 8px rgba(148,163,184,0.5); }
+.player-row-elo.elo-tier-bronze { color: #cd7f32; }
+
+/* ── Game history tab ─────────────────────────────────────────────────────── */
+
+#tab-history {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.game-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gh-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+.gh-card:hover,
+.gh-card.gh-open {
+  border-color: var(--border-red);
+}
+
+.gh-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  flex-wrap: wrap;
+}
+.gh-header:hover { background: var(--bg-elevated); }
+
+.gh-date   { color: var(--text-secondary); font-size: var(--font-sm); flex: 1; min-width: 120px; }
+.gh-place  { font-size: 18px; flex-shrink: 0; }
+.gh-score  { font-weight: 700; color: var(--accent-primary); white-space: nowrap; flex-shrink: 0; }
+.gh-elo    { white-space: nowrap; flex-shrink: 0; font-size: var(--font-sm); font-weight: 700; }
+.gh-new-elo { font-weight: 400; color: var(--text-secondary); font-size: var(--font-xs); }
+.gh-chevron {
+  color: var(--text-muted);
+  font-size: 10px;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.gh-card.gh-open .gh-chevron { transform: rotate(180deg); }
+
+.gh-body {
+  border-top: 1px solid var(--border-color);
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+}
+
+.gh-details {
+  display: flex;
+  gap: 16px;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.gh-opponents {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gh-opponent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--font-sm);
+  padding: 6px 8px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+.gh-opp-place { flex-shrink: 0; font-size: 16px; min-width: 26px; }
+.gh-opp-name  { flex: 1; color: var(--text-primary); text-decoration: none; }
+.gh-opp-name:hover { text-decoration: underline; color: var(--accent-primary); }
+.gh-opp-score { flex-shrink: 0; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.gh-no-opponents { font-size: var(--font-sm); color: var(--text-muted); margin: 0; }
