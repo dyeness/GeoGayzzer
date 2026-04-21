@@ -44,6 +44,12 @@
   to   { top: calc(100% + 2px); }
 }
 
+/* Player card entrance */
+@keyframes playerCardIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
 /* Red glow pulse */
 @keyframes pulseGlow {
   0%, 100% { box-shadow: 0 0 8px  rgba(200, 0, 0, 0.30); }

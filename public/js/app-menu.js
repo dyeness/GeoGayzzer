@@ -28,12 +28,14 @@
   }
 
   async function _showPlayers() {
-    UI.showPlayers();
+    UI.showScreen('stats');
     const list = document.getElementById('players-list');
     if (!list) return;
     list.innerHTML = '<p class="menu-lb-empty">Загрузка...</p>';
     try {
       const players = await fetch('/api/profiles').then(r => r.json());
+      // Sort by ELO descending
+      players.sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000));
       if (!players.length) {
         list.innerHTML = '<p class="menu-lb-empty">Нет зарегистрированных игроков</p>';
         return;
@@ -43,20 +45,23 @@
         const prestige = p.prestige > 0
           ? `<span class="player-row-prestige">[${p.prestige}💎]</span>`
           : '';
-        const medals = ['', '🥇', '🥈', '🥉'];
-        const rankBadge = medals[i + 1]
-          ? `<span class="player-row-rank-medal">${medals[i + 1]}</span>`
+        const medals = ['🥇', '🥈', '🥉'];
+        const rankBadge = medals[i] != null
+          ? `<span class="player-row-rank-medal">${medals[i]}</span>`
           : `<span class="player-row-rank">${i + 1}</span>`;
+        const elo = p.elo ?? 1000;
+        const eloCls = elo >= 1200 ? 'elo-tier-gold' : elo >= 1100 ? 'elo-tier-silver' : elo < 950 ? 'elo-tier-bronze' : '';
+        const delay = i * 55;
         return `
-        <div class="player-row">
+        <a href="/profile/${encodeURIComponent(p.nickname)}" class="player-row" style="--card-delay:${delay}ms;">
           ${rankBadge}
           <div class="player-row-avatar">${UI.escapeHtml(avatar)}</div>
           <div class="player-row-info">
             <span class="player-row-nick">${UI.escapeHtml(p.nickname)}${prestige}</span>
-            <span class="player-row-sub">Ур. ${p.level} &middot; ${p.gamesPlayed} игр &middot; ${p.elo ?? 1000} ЭЛО</span>
+            <span class="player-row-sub">Ур.&nbsp;${p.level} · ${p.gamesPlayed}&nbsp;игр · ${(p.totalXp || 0).toLocaleString()}&nbsp;XP</span>
           </div>
-          <a href="/profile/${encodeURIComponent(p.nickname)}" class="btn btn-sm btn-outline player-row-link">Профиль →</a>
-        </div>`;
+          <span class="player-row-elo ${eloCls}">${elo.toLocaleString()}&nbsp;ЭЛО</span>
+        </a>`;
       }).join('');
     } catch (e) {
       list.innerHTML = '<p class="menu-lb-empty">Ошибка загрузки</p>';
