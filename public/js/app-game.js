@@ -191,6 +191,7 @@
       GameMap.resetMiniMap();
       UI.showScreen('game');
       UI.hideMultiplayerRoundResults();
+      UI.showInGameLeaderboard(data.players ?? []);
       UI.updateHUD();
       UI.updateMultiplayerHUD(0, data.totalRounds);
 
@@ -249,7 +250,8 @@
     UI.updateHUD();
     UI.updateMultiplayerHUD(0, 0);
 
-    if (data.round === 1) UI.showInGameLeaderboard(data.players ?? []);
+    // Always show the leaderboard panel; update content if server sent players
+    UI.showInGameLeaderboard(data.players ?? []);
 
     if (data.imageId) {
       await Panorama.loadById(data.imageId, loc.lat, loc.lng);
@@ -328,7 +330,7 @@
     });
 
     document.getElementById('btn-play-again')?.addEventListener('click', () => {
-      window.location.href = isSolo ? '/game/solo' : '/menu';
+      window.location.reload();
     });
 
     document.getElementById('btn-back-menu')?.addEventListener('click', () => {

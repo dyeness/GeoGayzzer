@@ -412,7 +412,7 @@ const UI = (() => {
   function showInGameLeaderboard(players) {
     const panel = document.getElementById('game-leaderboard');
     if (panel) panel.classList.remove('hidden');
-    if (players?.length) updateInGameLeaderboard(players);
+    if (players && players.length > 0) updateInGameLeaderboard(players);
   }
 
   /** Update the leaderboard list with round-results data */
