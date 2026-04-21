@@ -39,7 +39,7 @@ const scoring = {
   },
   calculateScore(distanceKm) {
     const MAX = 5000;
-    return Math.round(MAX * Math.exp(-distanceKm / 2000));
+    return Math.round(MAX * Math.exp(-distanceKm / 1000));
   },
 };
 
@@ -128,21 +128,57 @@ function addToCache(entry) {
   if (panoramaCache.length % 10 === 0) saveCache();
 }
 
-/** Pick N random entries from cache that are geographically spread. */
+/** Pick N random entries from cache that are geographically spread.
+ *  Uses weighted random selection: panoramas played more times have much lower weight.
+ *  Weight formula: 1 / (1 + plays)^2  — so 0 plays = weight 1, 1 play = 0.25, 3 plays = 0.0625
+ */
 function pickFromCache(count, excludeSet = new Set()) {
   // Exclude panoramas already used this server session or explicitly excluded
   const available = panoramaCache.filter(e => !sessionUsed.has(e.id) && !excludeSet.has(e.id));
   if (available.length < count) return null; // not enough fresh ones
-  const shuffled = [...available].sort(() => Math.random() - 0.5);
+
+  // Assign weights based on play count (frequently played = much lower weight)
+  const weighted = available.map(e => {
+    const plays = panPlays[e.id] || 0;
+    return { entry: e, weight: 1 / Math.pow(1 + plays, 2) };
+  });
+
+  // Weighted shuffle: pick by weight
+  function weightedPick(pool) {
+    const total = pool.reduce((s, x) => s + x.weight, 0);
+    let r = Math.random() * total;
+    for (const x of pool) {
+      r -= x.weight;
+      if (r <= 0) return x;
+    }
+    return pool[pool.length - 1];
+  }
+
+  const remaining = [...weighted];
   const picked = [];
-  for (const entry of shuffled) {
-    if (picked.every(p => haversineKm(p.lat, p.lng, entry.lat, entry.lng) > 300)) {
-      picked.push(entry);
-      if (picked.length === count) break;
+  let attempts = 0;
+
+  while (picked.length < count && remaining.length > 0 && attempts < available.length * 3) {
+    attempts++;
+    const idx = remaining.findIndex(x => x === weightedPick(remaining));
+    if (idx === -1) continue;
+    const [chosen] = remaining.splice(idx, 1);
+    const e = chosen.entry;
+    if (picked.every(p => haversineKm(p.lat, p.lng, e.lat, e.lng) > 300)) {
+      picked.push(e);
     }
   }
-  if (picked.length < count) return shuffled.slice(0, count).map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id }));
-  return picked.map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id }));
+
+  // Fallback: if geographic spread couldn't be satisfied, just use weighted picks
+  if (picked.length < count) {
+    const fallback = [...weighted].sort(() => Math.random() - 0.5);
+    for (const x of fallback) {
+      if (picked.length >= count) break;
+      if (!picked.includes(x.entry)) picked.push(x.entry);
+    }
+  }
+
+  return picked.slice(0, count).map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id }));
 }
 
 loadCache();
@@ -518,7 +554,14 @@ app.post('/api/preload/stop', (_req, res) => {
 
 // Global leaderboard — top 20 scores
 app.get('/api/leaderboard', (_req, res) => {
-  res.json([...leaderboard].sort((a, b) => b.score - a.score).slice(0, 20));
+  // Deduplicate: keep only best score per nickname
+  const best = new Map();
+  for (const e of leaderboard) {
+    if (!best.has(e.nickname) || best.get(e.nickname).score < e.score) {
+      best.set(e.nickname, e);
+    }
+  }
+  res.json([...best.values()].sort((a, b) => b.score - a.score).slice(0, 10));
 });
 
 app.post('/api/leaderboard', (req, res) => {
@@ -591,14 +634,32 @@ const io = new Server(server, {
 /** Call after game-over to update all players' profiles. Returns ELO changes map. */
 function finalizeGameProfiles(room) {
   const leaderboard = room.getLeaderboard();
+  const allPlayers = leaderboard.map((p, idx) => ({
+    nickname:       p.nickname,
+    totalScore:     p.totalScore,
+    matchPlacement: idx + 1,
+  }));
   const gameProfileData = leaderboard.map((p, idx) => ({
     nickname:       p.nickname,
     totalScore:     p.totalScore,
     matchPlacement: idx + 1,
     playerCount:    leaderboard.length,
     rounds:         room.totalRounds,
+    allPlayers,
   }));
   return profiles.updateAfterGame(gameProfileData);
+}
+
+/** Build enriched game-over payload: leaderboard with current ELO + avgElo. */
+function buildGameOverPayload(room, eloChanges) {
+  const lb = room.getLeaderboard().map(p => ({
+    ...p,
+    elo: profiles.getProfile(p.nickname)?.elo ?? 1000,
+  }));
+  const avgElo = lb.length > 0
+    ? Math.round(lb.reduce((s, p) => s + p.elo, 0) / lb.length)
+    : 0;
+  return { leaderboard: lb, eloChanges, avgElo };
 }
 
 /** Enrich player list with profile data (level, prestige, elo) for lobby display. */
@@ -823,7 +884,9 @@ io.on('connection', (socket) => {
       const nextLoc = room.nextRound();
       if (!nextLoc) {
         // Game over — mark all used this session
-        markUsed((room.resolvedImages || []).map(r => r.id));        const eloChanges1 = finalizeGameProfiles(room);        io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard(), eloChanges: eloChanges1 });
+        markUsed((room.resolvedImages || []).map(r => r.id));
+        const eloChanges1 = finalizeGameProfiles(room);
+        io.to(room.code).emit('game-over', buildGameOverPayload(room, eloChanges1));
       } else {
         const imageId = room.resolvedImages?.[room.currentRound]?.id ?? null;
         io.to(room.code).emit('round-start', {
@@ -847,7 +910,7 @@ io.on('connection', (socket) => {
     if (!nextLoc) {
       markUsed((room.resolvedImages || []).map(r => r.id));
       const eloChanges2 = finalizeGameProfiles(room);
-      io.to(room.code).emit('game-over', { leaderboard: room.getLeaderboard(), eloChanges: eloChanges2 });
+      io.to(room.code).emit('game-over', buildGameOverPayload(room, eloChanges2));
       return cb?.({ success: true, finished: true });
     }
     const imageId = room.resolvedImages?.[room.currentRound]?.id ?? null;
