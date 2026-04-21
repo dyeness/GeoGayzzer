@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   Base — Reset, Typography, Utilities
+   GeoGAYZZER — Base, Reset, Utilities
    ═══════════════════════════════════════════ */
 
 *, *::before, *::after {
@@ -17,27 +17,42 @@ html, body {
   color: var(--text-primary);
   background: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scanlines ───────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,       transparent    2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
 }
 
 a { color: var(--accent-info); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a:hover { color: var(--text-primary); text-decoration: none; }
 
 img { max-width: 100%; display: block; }
-
 input, select, button { font-family: inherit; }
 
-/* Utility classes */
-.text-muted  { color: var(--text-muted); font-size: var(--font-sm); }
+/* ─── Utilities ───────────────────────────── */
+.text-muted  { color: var(--text-muted);     font-size: var(--font-sm); }
 .text-error  { color: var(--accent-primary); font-size: var(--font-sm); margin-top: 8px; }
 .text-center { text-align: center; }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary); }
-::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+/* ─── Scrollbar ───────────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track  { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb  { background: rgba(180, 0, 0, 0.45); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
 
-/* Hide Mapillary attribution by default — restore with dev.info in console */
+/* Mapillary */
 .mapillary-attribution-container { display: none !important; }
 .dev-info-visible .mapillary-attribution-container { display: block !important; }
 
