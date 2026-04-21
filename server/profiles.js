@@ -34,7 +34,8 @@ const MAX_ROUND_SCORE = 5000;
 
 /** XP required to advance FROM level N to N+1 */
 function xpForLevel(n) {
-  return Math.floor(200 * Math.pow(n, 1.5));
+  // Мягкий рост: 350 * n^1.2 вместо 200 * n^1.5
+  return Math.floor(200 * Math.pow(n, 1.1));
 }
 
 /**
@@ -264,8 +265,14 @@ function calcEloChanges(players) {
       // Actual: lower placement = better result (1st place beats 2nd)
       const sa = a.placement < b.placement ? 1 : a.placement > b.placement ? 0 : 0.5;
       const da = Math.round(K * (sa - ea));
-      changes[a.nickname] += da;
-      changes[b.nickname] -= da;
+      // Winner gets +20% bonus on top; loser only loses the base amount
+      if (da > 0) {
+        changes[a.nickname] += Math.round(da * 1.2);
+        changes[b.nickname] -= da;
+      } else if (da < 0) {
+        changes[a.nickname] += da;
+        changes[b.nickname] += Math.round(Math.abs(da) * 1.2);
+      }
     }
   }
   return changes;
@@ -313,14 +320,21 @@ function updateAfterGame(gameResults) {
     if (r.totalScore > prof.records.bestTotalScore) prof.records.bestTotalScore = r.totalScore;
     if (r.matchPlacement === 1 && r.playerCount > 1) prof.records.gamesWon += 1;
 
-    // Last game
-    prof.lastGame = {
+    // Last game + game history
+    const gameEntry = {
       date:       new Date().toISOString(),
       totalScore: r.totalScore,
       placement:  r.matchPlacement,
       players:    r.playerCount,
       rounds:     r.rounds,
+      eloDelta,
+      newElo:     prof.elo,
+      opponents:  (r.allPlayers || []).filter(p => p.nickname !== r.nickname),
     };
+    prof.lastGame = gameEntry;
+    if (!prof.gameHistory) prof.gameHistory = [];
+    prof.gameHistory.unshift(gameEntry);
+    if (prof.gameHistory.length > 30) prof.gameHistory = prof.gameHistory.slice(0, 30);
 
     // Game achievements
     if (r.matchPlacement === 1 && r.playerCount > 1) awardAchievement(prof, 'game_first');
