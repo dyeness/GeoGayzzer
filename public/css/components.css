@@ -577,3 +577,141 @@
   text-shadow: 0 0 8px rgba(245, 197, 24, 0.7);
 }
 
+/* ══════════════════════════════════════════════════════════
+   Player cards (stats / players screen)
+   ══════════════════════════════════════════════════════════ */
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.player-row {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  animation: playerCardIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--card-delay, 0ms);
+  transition:
+    border-color 0.2s ease,
+    background   0.2s ease,
+    box-shadow   0.2s ease;
+}
+
+/* Shimmer sweep on hover */
+.player-row::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: -80%;
+  width: 50%;
+  background: linear-gradient(90deg, transparent, rgba(200, 0, 0, 0.07), transparent);
+  transform: skewX(-15deg);
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+/* Bottom red accent line */
+.player-row::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.player-row:hover {
+  border-color: var(--border-red);
+  background: var(--bg-elevated);
+  box-shadow: var(--glow-sm);
+}
+.player-row:hover::before { left: 130%; }
+.player-row:hover::after  { transform: scaleX(1); }
+
+.player-row-rank {
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.player-row-rank-medal {
+  font-size: 22px;
+  min-width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.player-row-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-secondary), #1a0000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: #fff;
+  flex-shrink: 0;
+  border: 2px solid var(--accent-secondary);
+  box-shadow: 0 0 10px rgba(150, 0, 0, 0.3);
+}
+
+.player-row-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.player-row-nick {
+  font-weight: 600;
+  font-size: var(--font-md);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.player-row-prestige {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: #a78bfa;
+  white-space: nowrap;
+}
+
+.player-row-sub {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.player-row-elo {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.player-row-elo.elo-tier-gold   { color: #f5c518; text-shadow: 0 0 10px rgba(245,197,24,0.6); }
+.player-row-elo.elo-tier-silver { color: #94a3b8; text-shadow: 0 0  8px rgba(148,163,184,0.5); }
+.player-row-elo.elo-tier-bronze { color: #cd7f32; }
+
