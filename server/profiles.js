@@ -58,7 +58,7 @@ const MAX_ROUND_SCORE = 5000;
 /** XP required to advance FROM level N to N+1 */
 function xpForLevel(n) {
   // Мягкий рост: 350 * n^1.2 вместо 200 * n^1.5
-  return Math.floor(200 * Math.pow(n, 1.1));
+  return Math.floor(150 * Math.pow(n, 1.1));
 }
 
 /**
@@ -158,6 +158,7 @@ const ACHIEVEMENT_DEFS = {
   // ──────────────── КРАЖА ОЧКОВ ────────────────────────────────────────────────
   steal_scored:    { name: 'Карманник',         icon: '🗡️', desc: 'Украл очки у соперника — ты был ближе к цели' },
   steal_big:       { name: 'Ограбление',        icon: '💰',  desc: 'Украл 500+ очков в одном раунде — серьёзный куш' },
+  steal_jackpot:   { name: 'Козырный петух',    icon: '🐓',  desc: 'Украл 2000+ очков в одном раунде — королевский куш!' },
   match_steals_3:  { name: 'Серийный вор',      icon: '🦹',  desc: 'Украл очки в 3 и более раундах одного матча' },
 
   // ──────────────── СЧЁТ ЗА МАТЧ ───────────────────────────────────────────────
@@ -292,6 +293,7 @@ function updateAfterRound(roundResults) {
     }
     if ((r.stolen      || 0) > 0)    awardAchievement(prof, 'steal_scored', r.stolen);
     if ((r.stolen      || 0) >= 500) awardAchievement(prof, 'steal_big',    r.stolen);
+    if ((r.stolen      || 0) >= 2000) awardAchievement(prof, 'steal_jackpot', r.stolen);
     if ((r.lostToSteal || 0) > 0)    awardAchievement(prof, 'steal_victim',  r.lostToSteal);
   }
   saveProfiles();
