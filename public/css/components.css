@@ -579,7 +579,7 @@
   flex-shrink: 0;
 }
 
-/* Тир по текущему ЭЛО — цвет фона (от низкого к высокому) */
+/* Тир по текущему ЭЛО — цвет фона (пороги: iron<900, bronze 900-999, default 1000-1149, silver 1150-1249, gold 1250-1349, platinum 1350-1499, diamond≥1500) */
 .elo-badge.elo-tier-iron     { background: #191614; border-color: rgba(107,97,85,0.35);  color: #6b6155; }
 .elo-badge.elo-tier-bronze   { background: #3d2000; border-color: rgba(205,127,50,0.4);  color: #cd7f32; }
 .elo-badge.elo-tier-silver   { background: #2a3a4a; border-color: rgba(148,163,184,0.4); color: #c0cfe0; }
