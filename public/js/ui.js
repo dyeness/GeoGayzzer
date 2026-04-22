@@ -288,7 +288,7 @@ const UI = (() => {
       }
       list.innerHTML = profiles.map((p, i) => {
         const elo = p.elo ?? 1000;
-        const eloCls = elo >= 1200 ? 'elo-tier-gold' : elo >= 1100 ? 'elo-tier-silver' : elo < 950 ? 'elo-tier-bronze' : '';
+        const eloCls = elo >= 2000 ? 'elo-tier-diamond' : elo >= 1600 ? 'elo-tier-platinum' : elo >= 1400 ? 'elo-tier-gold' : elo >= 1200 ? 'elo-tier-silver' : elo >= 850 ? 'elo-tier-bronze' : 'elo-tier-iron';
         const profileUrl = '/profile/' + encodeURIComponent(p.nickname);
         const avatarLetter = p.nickname.charAt(0).toUpperCase();
         const rankDisplay = i < 3
@@ -483,10 +483,12 @@ const UI = (() => {
    * @returns {string} HTML-строка
    */
   function eloBadge(elo, delta = null) {
-    const tierCls = elo >= 1400 ? 'elo-tier-gold'
-                  : elo >= 1150 ? 'elo-tier-silver'
-                  : elo <  950  ? 'elo-tier-bronze'
-                  : '';
+    const tierCls = elo >= 2000 ? 'elo-tier-diamond'
+                  : elo >= 1600 ? 'elo-tier-platinum'
+                  : elo >= 1400 ? 'elo-tier-gold'
+                  : elo >= 1200 ? 'elo-tier-silver'
+                  : elo >= 850  ? 'elo-tier-bronze'
+                  : 'elo-tier-iron';
     let deltaHtml = '';
     if (delta !== null && delta !== undefined) {
       const sign = delta > 0 ? '+' : '';
