@@ -129,22 +129,30 @@ function addToCache(entry) {
 }
 
 /** Pick N random entries from cache that are geographically spread.
- *  Uses weighted random selection: panoramas played more times have much lower weight.
- *  Weight formula: 1 / (1 + plays)^2  — so 0 plays = weight 1, 1 play = 0.25, 3 plays = 0.0625
+ *
+ *  Priority: panoramas with 0 plays are ALWAYS preferred over played ones.
+ *  Only when there aren't enough never-played panoramas do we fall back to
+ *  played ones (lowest play count first, weighted random within that tier).
+ *
+ *  Within each tier, weighted random is used:
+ *    0-play tier:  uniform weight
+ *    played tier:  weight = 1 / (1 + plays)^2
  */
 function pickFromCache(count, excludeSet = new Set()) {
   // Exclude panoramas already used this server session or explicitly excluded
   const available = panoramaCache.filter(e => !sessionUsed.has(e.id) && !excludeSet.has(e.id));
   if (available.length < count) return null; // not enough fresh ones
 
-  // Assign weights based on play count (frequently played = much lower weight)
-  const weighted = available.map(e => {
-    const plays = panPlays[e.id] || 0;
-    return { entry: e, weight: 1 / Math.pow(1 + plays, 2) };
-  });
+  // Split into never-played vs played pools
+  const neverPlayed = available.filter(e => !(panPlays[e.id] > 0));
+  const played      = available.filter(e =>  (panPlays[e.id] > 0))
+                                .map(e => ({ entry: e, weight: 1 / Math.pow(1 + panPlays[e.id], 2) }));
 
-  // Weighted shuffle: pick by weight
-  function weightedPick(pool) {
+  // Weighted random pick from a pool [{entry, weight}] or [entry] (uniform)
+  function weightedPick(pool, uniform = false) {
+    if (uniform) {
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
     const total = pool.reduce((s, x) => s + x.weight, 0);
     let r = Math.random() * total;
     for (const x of pool) {
@@ -154,27 +162,52 @@ function pickFromCache(count, excludeSet = new Set()) {
     return pool[pool.length - 1];
   }
 
-  const remaining = [...weighted];
   const picked = [];
-  let attempts = 0;
 
-  while (picked.length < count && remaining.length > 0 && attempts < available.length * 3) {
-    attempts++;
-    const idx = remaining.findIndex(x => x === weightedPick(remaining));
-    if (idx === -1) continue;
-    const [chosen] = remaining.splice(idx, 1);
-    const e = chosen.entry;
+  // Helper: try to add an entry respecting geographic spread (>300 km from all picked)
+  function tryAdd(e) {
     if (picked.every(p => haversineKm(p.lat, p.lng, e.lat, e.lng) > 300)) {
       picked.push(e);
+      return true;
+    }
+    return false;
+  }
+
+  // Phase 1: fill from never-played pool first
+  const neverPool = [...neverPlayed];
+  let attempts = 0;
+  while (picked.length < count && neverPool.length > 0 && attempts < neverPool.length * 4) {
+    attempts++;
+    const e = weightedPick(neverPool, true);
+    const idx = neverPool.indexOf(e);
+    neverPool.splice(idx, 1);
+    tryAdd(e);
+  }
+  // Phase 1 fallback: spread couldn't be satisfied — add remaining never-played ignoring distance
+  if (picked.length < count && neverPool.length > 0) {
+    for (const e of neverPool.sort(() => Math.random() - 0.5)) {
+      if (picked.length >= count) break;
+      if (!picked.includes(e)) picked.push(e);
     }
   }
 
-  // Fallback: if geographic spread couldn't be satisfied, just use weighted picks
+  // Phase 2: if still not enough, fill from played pool (lowest plays preferred)
   if (picked.length < count) {
-    const fallback = [...weighted].sort(() => Math.random() - 0.5);
-    for (const x of fallback) {
-      if (picked.length >= count) break;
-      if (!picked.includes(x.entry)) picked.push(x.entry);
+    const playedPool = [...played];
+    attempts = 0;
+    while (picked.length < count && playedPool.length > 0 && attempts < playedPool.length * 4) {
+      attempts++;
+      const x = weightedPick(playedPool);
+      const idx = playedPool.indexOf(x);
+      playedPool.splice(idx, 1);
+      tryAdd(x.entry);
+    }
+    // Phase 2 fallback: geographic spread relaxed
+    if (picked.length < count) {
+      for (const x of playedPool.sort(() => Math.random() - 0.5)) {
+        if (picked.length >= count) break;
+        if (!picked.includes(x.entry)) picked.push(x.entry);
+      }
     }
   }
 
