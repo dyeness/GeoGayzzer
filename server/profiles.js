@@ -109,44 +109,58 @@ function calcMatchXp(matchPlacement, playerCount, allRounds90, bigOpponents) {
 
 const ACHIEVEMENT_DEFS = {
   // ──────────────── ТОЧНОСТЬ (раунд) ──────────────────────────────────────────────
-  accuracy_50:     { name: 'На глаз',          icon: '🎯', desc: 'Набрал 2 500+ очков в раунде — угадал с точностью от 50%' },
-  accuracy_75:     { name: 'Снайпер',         icon: '🔭', desc: 'Набрал 3 750+ очков в раунде — угадал с точностью от 75%' },
-  accuracy_90:     { name: 'Орёл',            icon: '🦅', desc: 'Набрал 4 500+ очков в раунде — угадал с точностью от 90%' },
-  accuracy_99:     { name: 'Перфекционист',  icon: '💎', desc: 'Набрал 4 950+ очков в раунде — почти идеальное попадание' },
-  close_call:      { name: 'Игла в стоге',    icon: '📌', desc: 'Угадал в пределах 1 км от цели — буквально на месте!' },
-  close_500m:      { name: 'Прямое попадание', icon: '🔎', desc: 'Угадал в пределах 500 м от цели — почти рядом!' },
-  close_100m:      { name: 'Точность хирурга', icon: '🏥', desc: 'Угадал в пределах 100 м от цели — невероятная точность!' },
-  no_guess:        { name: 'Созерцатель',    icon: '👁️', desc: 'Не сделал ни одного угадывания в раунде — глядел и молчал' },
-  round_dominator: { name: 'Доминация',      icon: '💪', desc: '1-е место в раунде С 4 000+ очков — подавил всех' },
-  steal_victim:    { name: 'Ограбленный',    icon: '😤', desc: 'У тебя украли очки — соперник был ближе к цели' },
+  accuracy_50:     { name: 'На глаз',           icon: '🎯',  desc: 'Набрал 2 500+ очков в раунде — угадал с точностью от 50%' },
+  accuracy_75:     { name: 'Снайпер',           icon: '🔭',  desc: 'Набрал 3 750+ очков в раунде — угадал с точностью от 75%' },
+  accuracy_90:     { name: 'Орёл',              icon: '🦅',  desc: 'Набрал 4 500+ очков в раунде — угадал с точностью от 90%' },
+  accuracy_99:     { name: 'Перфекционист',     icon: '💎',  desc: 'Набрал 4 950+ очков в раунде — почти идеальное попадание' },
+  close_call:      { name: 'Игла в стоге',      icon: '📌',  desc: 'Угадал в пределах 1 км от цели — буквально на месте!' },
+  close_500m:      { name: 'Прямое попадание',  icon: '🔎',  desc: 'Угадал в пределах 500 м от цели — почти рядом!' },
+  close_100m:      { name: 'Точность хирурга',  icon: '🏥',  desc: 'Угадал в пределах 100 м от цели — невероятная точность!' },
+  round_dominator: { name: 'Доминация',         icon: '💪',  desc: '1-е место в раунде с 4 000+ очков — подавил всех' },
+  steal_victim:    { name: 'Ограбленный',       icon: '😤',  desc: 'У тебя украли очки — соперник был ближе к цели' },
 
-  // ──────────────── МЕСТА ──────────────────────────────────────────────────────────────────
-  round_first:     { name: 'Первый в раунде', icon: '🥇', desc: 'Занял 1-е место среди всех игроков в раунде' },
-  game_first:      { name: 'Чемпион',        icon: '🏆', desc: 'Победил в многопользовательском матче, заняв 1-е место' },
-  top3_match:      { name: 'Призёр',           icon: '🥉', desc: 'Завершил матч в топ-3 — встал на пьедестал почёта' },
-  underdog:        { name: 'Тёмная лошадка',  icon: '🐴', desc: 'Победил, имея 3 и более соперников — настоящая победа!' },
-  five_wins:       { name: 'Серийный победитель', icon: '🔥', desc: 'Одержал 5 побед в матчах — стабильный результат' },
-  ten_wins:        { name: 'Непобедимый',    icon: '⚔️', desc: 'Одержал 10 побед в матчах — истинная доминация' },
+  // ──────────────── МЕСТА ───────────────────────────────────────────────────────
+  round_first:     { name: 'Первый в раунде',   icon: '🥇',  desc: 'Занял 1-е место среди всех игроков в раунде' },
+  game_first:      { name: 'Чемпион',           icon: '🏆',  desc: 'Победил в многопользовательском матче, заняв 1-е место' },
+  top3_match:      { name: 'Призёр',            icon: '🥉',  desc: 'Завершил матч в топ-3 — встал на пьедестал почёта' },
+  underdog:        { name: 'Тёмная лошадка',    icon: '🐴',  desc: 'Победил, имея 3 и более соперников — настоящая победа!' },
 
-  // ──────────────── КРАЖА ОЧКОВ ──────────────────────────────────────────────────────────
-  steal_scored:    { name: 'Карманник',      icon: '🗡️', desc: 'Украл очки у соперника — ты был ближе к цели' },
-  steal_big:       { name: 'Ограбление',       icon: '💰', desc: 'Украл 500+ очков в одном раунде — серьёзный куш' },
-  match_steals_3:  { name: 'Серийный вор',   icon: '🦹', desc: 'Украл очки в 3 и более раундах одного матча' },
+  // Победы в матчах (milestone, не повторяются)
+  wins_1:          { name: 'Первая кровь',       icon: '🎖️', desc: 'Одержал первую победу в матче' },
+  wins_5:          { name: 'Серийный победитель',icon: '🔥',  desc: 'Одержал 5 побед в матчах — стабильный результат' },
+  wins_10:         { name: 'Непобедимый',        icon: '⚔️',  desc: 'Одержал 10 побед в матчах — истинная доминация' },
+  wins_25:         { name: 'Ветеран побед',       icon: '🏅',  desc: 'Одержал 25 побед в матчах — легендарный игрок' },
+  wins_50:         { name: 'Доминатор',          icon: '👑',  desc: 'Одержал 50 побед в матчах — неоспоримый чемпион' },
 
-  // ──────────────── СЧЁТ ЗА МАТЧ ──────────────────────────────────────────────────────────
-  score_5000:      { name: 'Исследователь',  icon: '🗺️', desc: 'Набрал 5 000+ очков за матч — неплохое начало' },
-  score_10000:     { name: 'Знаток',          icon: '📍', desc: 'Набрал 10 000+ очков за матч — ты точно знаешь мир' },
-  score_15000:     { name: 'Профессионал',   icon: '📊', desc: 'Набрал 15 000+ очков за матч — выдающийся результат' },
-  score_20000:     { name: 'Эксперт',          icon: '🌍', desc: 'Набрал 20 000+ очков за матч — почти идеальный результат' },
-  score_25000:     { name: 'Легенда',          icon: '🌟', desc: 'Набрал все 25 000 очков за матч из 5 раундов — абсолютный максимум!' },
-  all_rounds_50:   { name: 'Стабильный',      icon: '📈', desc: 'Все раунды матча с 50%+ точностью — ни одного провала' },
-  all_rounds_90:   { name: 'Безупречный',     icon: '✨', desc: 'Все раунды матча с 90%+ точностью — совершенная игра!' },
+  // ──────────────── КРАЖА ОЧКОВ ────────────────────────────────────────────────
+  steal_scored:    { name: 'Карманник',         icon: '🗡️', desc: 'Украл очки у соперника — ты был ближе к цели' },
+  steal_big:       { name: 'Ограбление',        icon: '💰',  desc: 'Украл 500+ очков в одном раунде — серьёзный куш' },
+  match_steals_3:  { name: 'Серийный вор',      icon: '🦹',  desc: 'Украл очки в 3 и более раундах одного матча' },
 
-  // ──────────────── ОПЫТ ПЛЕЙЕРА ─────────────────────────────────────────────────────────
-  first_game:      { name: 'Первый шаг',    icon: '🎮', desc: 'Завершил свой первый многопользовательский матч' },
-  game_veteran:    { name: 'Ветеран',        icon: '🎖️', desc: 'Сыграл 10 матчей — настоящий исследователь!' },
-  games_25:        { name: 'Завсегдатай',    icon: '🎲', desc: 'Сыграл 25 матчей — постоянный исследователь' },
-  games_50:        { name: 'Мастер',          icon: '🎓', desc: 'Сыграл 50 матчей — неоспоримый мастер географии' },
+  // ──────────────── СЧЁТ ЗА МАТЧ ───────────────────────────────────────────────
+  score_5000:      { name: 'Исследователь',     icon: '🗺️', desc: 'Набрал 5 000+ очков за матч — неплохое начало' },
+  score_10000:     { name: 'Знаток',            icon: '📍',  desc: 'Набрал 10 000+ очков за матч — ты точно знаешь мир' },
+  score_15000:     { name: 'Профессионал',      icon: '📊',  desc: 'Набрал 15 000+ очков за матч — выдающийся результат' },
+  score_20000:     { name: 'Эксперт',           icon: '🌍',  desc: 'Набрал 20 000+ очков за матч — почти идеальный результат' },
+  score_25000:     { name: 'Легенда',           icon: '🌟',  desc: 'Набрал все 25 000 очков за матч — абсолютный максимум!' },
+  all_rounds_50:   { name: 'Стабильный',        icon: '📈',  desc: 'Все раунды матча с 50%+ точностью — ни одного провала' },
+  all_rounds_90:   { name: 'Безупречный',       icon: '✨',  desc: 'Все раунды матча с 90%+ точностью — совершенная игра!' },
+
+  // ──────────────── МАТЧИ СЫГРАНО (milestone, не повторяются) ─────────────────
+  first_game:      { name: 'Первый шаг',        icon: '🎮',  desc: 'Завершил свой первый многопользовательский матч' },
+  games_10:        { name: 'Ветеран',           icon: '🎲',  desc: 'Сыграл 10 матчей — настоящий исследователь' },
+  games_25:        { name: 'Завсегдатай',       icon: '📅',  desc: 'Сыграл 25 матчей — постоянный исследователь' },
+  games_50:        { name: 'Мастер',            icon: '🎓',  desc: 'Сыграл 50 матчей — неоспоримый мастер географии' },
+  games_100:       { name: 'Сотник',            icon: '💯',  desc: 'Сыграл 100 матчей — настоящий фанат' },
+  games_250:       { name: 'Одержимый',         icon: '🔱',  desc: 'Сыграл 250 матчей — ты здесь живёшь?' },
+
+  // ──────────────── ЭЛО (milestone, не повторяются) ────────────────────────────
+  elo_1100:        { name: 'Подающий надежды',  icon: '📈',  desc: 'Достиг рейтинга 1100 ЭЛО — выше среднего' },
+  elo_1200:        { name: 'Серебряный',        icon: '🥈',  desc: 'Достиг рейтинга 1200 ЭЛО — ты в элите' },
+  elo_1400:        { name: 'Золотой',           icon: '🥇',  desc: 'Достиг рейтинга 1400 ЭЛО — выдающийся игрок' },
+  elo_1600:        { name: 'Платиновый',        icon: '💠',  desc: 'Достиг рейтинга 1600 ЭЛО — почти непобедим' },
+  elo_2000:        { name: 'Алмазный',          icon: '💎',  desc: 'Достиг рейтинга 2000 ЭЛО — абсолютный чемпион' },
+  elo_drop:        { name: 'Дно',               icon: '📉',  desc: 'Рейтинг упал ниже 900 ЭЛО — бывает...' },
 };
 
 /* ── Profile init ────────────────────────────────────────────────────────── */
@@ -192,6 +206,15 @@ function awardAchievement(profile, id, value = null) {
   });
 }
 
+/** One-time milestone: выдаётся только если ещё не было в истории */
+function awardMilestone(profile, id) {
+  if (!hasEverEarned(profile, id)) awardAchievement(profile, id);
+}
+
+function hasEverEarned(profile, id) {
+  return profile.achievements.some(a => a.id === id);
+}
+
 /* ── Update after each round ─────────────────────────────────────────────── */
 
 /**
@@ -225,6 +248,12 @@ function updateAfterRound(roundResults) {
     const accuracyPct = (r.score / MAX_ROUND_SCORE) * 100;
     if (accuracyPct > prof.records.bestAccuracyPct) prof.records.bestAccuracyPct = accuracyPct;
     if ((r.stolen || 0) > prof.records.bestSteals) prof.records.bestSteals = r.stolen;
+    // Лучшая точность по реальному расстоянию (меньше = лучше)
+    if (r.distance !== null) {
+      if (prof.records.bestAccuracyDist === undefined || r.distance < prof.records.bestAccuracyDist) {
+        prof.records.bestAccuracyDist = r.distance;
+      }
+    }
 
     // Round achievements
     if (accuracyPct >= 50)  awardAchievement(prof, 'accuracy_50', +accuracyPct.toFixed(1));
@@ -234,14 +263,13 @@ function updateAfterRound(roundResults) {
     if (r.distance !== null && r.distance < 1)   awardAchievement(prof, 'close_call',  +r.distance.toFixed(3));
     if (r.distance !== null && r.distance < 0.5) awardAchievement(prof, 'close_500m',  +r.distance.toFixed(3));
     if (r.distance !== null && r.distance < 0.1) awardAchievement(prof, 'close_100m',  +r.distance.toFixed(3));
-    if (r.distance === null) awardAchievement(prof, 'no_guess');
     if (r.roundPlacement === 1 && r.playerCount > 1) {
       awardAchievement(prof, 'round_first');
       if (r.score >= 4000) awardAchievement(prof, 'round_dominator', r.score);
     }
-    if ((r.stolen      || 0) > 0)   awardAchievement(prof, 'steal_scored', r.stolen);
+    if ((r.stolen      || 0) > 0)    awardAchievement(prof, 'steal_scored', r.stolen);
     if ((r.stolen      || 0) >= 500) awardAchievement(prof, 'steal_big',    r.stolen);
-    if ((r.lostToSteal || 0) > 0)   awardAchievement(prof, 'steal_victim',  r.lostToSteal);
+    if ((r.lostToSteal || 0) > 0)    awardAchievement(prof, 'steal_victim',  r.lostToSteal);
   }
   saveProfiles();
 }
@@ -340,22 +368,42 @@ function updateAfterGame(gameResults) {
     if (r.matchPlacement === 1 && r.playerCount > 1) awardAchievement(prof, 'game_first');
     if (r.matchPlacement <= 3 && r.playerCount > 1)  awardAchievement(prof, 'top3_match', r.matchPlacement);
     if (r.matchPlacement === 1 && r.playerCount >= 4) awardAchievement(prof, 'underdog');
-    if (prof.gamesPlayed === 1)  awardAchievement(prof, 'first_game');
-    if (prof.gamesPlayed === 10) awardAchievement(prof, 'game_veteran');
-    if (prof.gamesPlayed === 25) awardAchievement(prof, 'games_25');
-    if (prof.gamesPlayed === 50) awardAchievement(prof, 'games_50');
-    if (prof.records.gamesWon === 5)  awardAchievement(prof, 'five_wins');
-    if (prof.records.gamesWon === 10) awardAchievement(prof, 'ten_wins');
     if (r.totalScore >= 5000)  awardAchievement(prof, 'score_5000',  r.totalScore);
     if (r.totalScore >= 10000) awardAchievement(prof, 'score_10000', r.totalScore);
     if (r.totalScore >= 15000) awardAchievement(prof, 'score_15000', r.totalScore);
     if (r.totalScore >= 20000) awardAchievement(prof, 'score_20000', r.totalScore);
     if (r.totalScore >= 25000) awardAchievement(prof, 'score_25000', r.totalScore);
 
+    // Milestone: матчи сыграно (выдаётся ровно один раз)
+    const gp = prof.gamesPlayed;
+    if (gp === 1)   awardMilestone(prof, 'first_game');
+    if (gp === 10)  awardMilestone(prof, 'games_10');
+    if (gp === 25)  awardMilestone(prof, 'games_25');
+    if (gp === 50)  awardMilestone(prof, 'games_50');
+    if (gp === 100) awardMilestone(prof, 'games_100');
+    if (gp === 250) awardMilestone(prof, 'games_250');
+
+    // Milestone: победы (выдаётся ровно один раз)
+    const gw = prof.records.gamesWon;
+    if (gw === 1)  awardMilestone(prof, 'wins_1');
+    if (gw === 5)  awardMilestone(prof, 'wins_5');
+    if (gw === 10) awardMilestone(prof, 'wins_10');
+    if (gw === 25) awardMilestone(prof, 'wins_25');
+    if (gw === 50) awardMilestone(prof, 'wins_50');
+
+    // Milestone: ЭЛО (выдаётся ровно один раз при первом достижении)
+    const currentElo = prof.elo;
+    if (currentElo >= 1100 && !hasEverEarned(prof, 'elo_1100')) awardMilestone(prof, 'elo_1100');
+    if (currentElo >= 1200 && !hasEverEarned(prof, 'elo_1200')) awardMilestone(prof, 'elo_1200');
+    if (currentElo >= 1400 && !hasEverEarned(prof, 'elo_1400')) awardMilestone(prof, 'elo_1400');
+    if (currentElo >= 1600 && !hasEverEarned(prof, 'elo_1600')) awardMilestone(prof, 'elo_1600');
+    if (currentElo >= 2000 && !hasEverEarned(prof, 'elo_2000')) awardMilestone(prof, 'elo_2000');
+    if (currentElo < 900   && eloDelta < 0 && !hasEverEarned(prof, 'elo_drop')) awardMilestone(prof, 'elo_drop');
+
     // Per-match aggregate achievements
     if (roundScores.length > 0) {
       if (roundScores.every(s => s >= MAX_ROUND_SCORE * 0.5)) awardAchievement(prof, 'all_rounds_50');
-      if (allRounds90)  awardAchievement(prof, 'all_rounds_90');
+      if (allRounds90) awardAchievement(prof, 'all_rounds_90');
     }
     if ((match.stealsCount || 0) >= 3) awardAchievement(prof, 'match_steals_3', match.stealsCount);
 
@@ -394,4 +442,92 @@ function getAchievementDefs() {
 
 loadProfiles();
 
-module.exports = { getProfile, getAllProfiles, getAchievementDefs, updateAfterRound, updateAfterGame, initProfile, getLevelInfo };
+/* ── Admin CLI commands ──────────────────────────────────────────────────── */
+const ADMIN_PASSCODE = 'dyeness.adm';
+const readline = require('readline');
+
+/**
+ * Выполнить admin-команду.
+ * Формат: add [achievement|xp|elo] <игрок>, <id/количество>
+ * Возвращает строку-результат.
+ */
+function adminCmd(input) {
+  const raw = input.trim();
+  const match = raw.match(/^add\s+(achievement|xp|elo)\s+(.+?),\s*(.+)$/i);
+  if (!match) {
+    return '❌  Синтаксис: add [achievement|xp|elo] <игрок>, <значение>';
+  }
+  const [, type, nick, val] = match;
+  const key  = nick.trim().toLowerCase();
+  const prof = profiles[key];
+  if (!prof) return `❌  Игрок "${nick.trim()}" не найден.`;
+
+  if (type.toLowerCase() === 'achievement') {
+    const id = val.trim();
+    if (!ACHIEVEMENT_DEFS[id]) return `❌  Достижение "${id}" не существует.`;
+    awardAchievement(prof, id);
+    saveProfiles();
+    return `✅  Выдано достижение [${id}] (${ACHIEVEMENT_DEFS[id].icon} ${ACHIEVEMENT_DEFS[id].name}) → ${prof.nickname}`;
+  }
+
+  if (type.toLowerCase() === 'xp') {
+    const amount = parseInt(val.trim(), 10);
+    if (isNaN(amount)) return '❌  XP должно быть числом.';
+    prof.totalXp = Math.max(0, prof.totalXp + amount);
+    saveProfiles();
+    return `✅  ${amount >= 0 ? '+' : ''}${amount} XP → ${prof.nickname} (итого ${prof.totalXp} XP)`;
+  }
+
+  if (type.toLowerCase() === 'elo') {
+    const amount = parseInt(val.trim(), 10);
+    if (isNaN(amount)) return '❌  ЭЛО должно быть числом.';
+    prof.elo = Math.max(100, (prof.elo ?? 1000) + amount);
+    saveProfiles();
+    return `✅  ${amount >= 0 ? '+' : ''}${amount} ЭЛО → ${prof.nickname} (итого ${prof.elo} ЭЛО)`;
+  }
+
+  return '❌  Неизвестный тип команды. Используй: achievement, xp, elo';
+}
+
+// Запускаем консольный REPL только если stdin доступен (не pipe)
+if (process.stdin.isTTY) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: '' });
+  let adminAuth = false;
+
+  rl.on('line', line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    if (!adminAuth) {
+      if (trimmed === ADMIN_PASSCODE) {
+        adminAuth = true;
+        console.log('🔓  Admin mode activated. Commands: add [achievement|xp|elo] <player>, <value>');
+        console.log('    Achievements list: node -e "const p=require(\'./profiles\'); p.getAchievementDefs().forEach(a=>console.log(a.id, a.icon, a.name))"');
+      }
+      return; // не выводим ничего на неверный пароль
+    }
+
+    if (trimmed === 'exit' || trimmed === 'logout') {
+      adminAuth = false;
+      console.log('🔒  Admin mode deactivated.');
+      return;
+    }
+
+    if (trimmed === 'list achievements') {
+      Object.entries(ACHIEVEMENT_DEFS).forEach(([id, d]) => console.log(`  ${id.padEnd(18)} ${d.icon}  ${d.name}`));
+      return;
+    }
+
+    if (trimmed === 'list players') {
+      Object.values(profiles).forEach(p =>
+        console.log(`  ${p.nickname.padEnd(20)} ELO:${(p.elo??1000)} XP:${p.totalXp} Games:${p.gamesPlayed}`)
+      );
+      return;
+    }
+
+    const result = adminCmd(trimmed);
+    console.log(result);
+  });
+}
+
+module.exports = { getProfile, getAllProfiles, getAchievementDefs, updateAfterRound, updateAfterGame, initProfile, getLevelInfo, adminCmd };

@@ -108,7 +108,14 @@
     /* Records tab */
     document.getElementById('rec-best-total').textContent    = fmt(prof.records.bestTotalScore) + ' pts';
     document.getElementById('rec-best-round').textContent    = fmt(prof.records.bestRoundScore) + ' pts';
-    document.getElementById('rec-best-accuracy').textContent = pct(prof.records.bestAccuracyPct);
+    /* Точность: показываем реальное расстояние в км/м если есть, иначе % */
+    const accEl = document.getElementById('rec-best-accuracy');
+    if (prof.records.bestAccuracyDist !== undefined && prof.records.bestAccuracyDist !== null) {
+      const d = prof.records.bestAccuracyDist;
+      accEl.textContent = d < 1 ? Math.round(d * 1000) + ' м' : d.toFixed(2) + ' км';
+    } else {
+      accEl.textContent = pct(prof.records.bestAccuracyPct);
+    }
     document.getElementById('rec-games-won').textContent     = fmt(prof.records.gamesWon);
     document.getElementById('rec-rounds-won').textContent    = fmt(prof.records.roundsWon);
     document.getElementById('rec-best-steals').textContent   = fmt(prof.records.bestSteals) + ' pts';
