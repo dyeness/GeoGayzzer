@@ -16,10 +16,33 @@ function loadProfiles() {
     if (fs.existsSync(PROFILES_FILE)) {
       profiles = JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf8'));
       console.log(`[profiles] Loaded ${Object.keys(profiles).length} profiles`);
+      migrateProfiles();
     }
   } catch (e) {
     console.warn('[profiles] Failed to load:', e.message);
     profiles = {};
+  }
+}
+
+/** One-time migration: compute bestAccuracyDist from bestAccuracyPct for old profiles */
+function migrateProfiles() {
+  let changed = 0;
+  for (const prof of Object.values(profiles)) {
+    if (prof.records && prof.records.bestAccuracyDist === undefined) {
+      const pct = prof.records.bestAccuracyPct;
+      if (typeof pct === 'number' && pct > 0 && pct < 100) {
+        // Inverse of: score = 5000 * exp(-d/1000) → d = -1000 * ln(pct/100)
+        prof.records.bestAccuracyDist = parseFloat((-1000 * Math.log(pct / 100)).toFixed(3));
+      } else {
+        // pct >= 100 means steals inflated score beyond max — no reliable distance
+        prof.records.bestAccuracyDist = null;
+      }
+      changed++;
+    }
+  }
+  if (changed > 0) {
+    saveProfiles();
+    console.log(`[profiles] Migrated bestAccuracyDist for ${changed} profiles`);
   }
 }
 

@@ -114,7 +114,7 @@
       const d = prof.records.bestAccuracyDist;
       accEl.textContent = d < 1 ? Math.round(d * 1000) + ' м' : d.toFixed(2) + ' км';
     } else {
-      accEl.textContent = pct(prof.records.bestAccuracyPct);
+      accEl.textContent = '—';
     }
     document.getElementById('rec-games-won').textContent     = fmt(prof.records.gamesWon);
     document.getElementById('rec-rounds-won').textContent    = fmt(prof.records.roundsWon);
