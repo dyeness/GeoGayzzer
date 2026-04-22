@@ -100,7 +100,7 @@ const UI = (() => {
         const prestige = (p.prestige || 0) > 0
           ? ` <span class="prestige-sm">[${p.prestige}\ud83d\udc8e]</span>`
           : '';
-        const meta = `<span class="lobby-player-meta">\u0423\u0440. ${p.level ?? 1} &middot; ${p.elo ?? 1000} \u042d\u041b\u041e</span>`;
+        const meta = `<span class="lobby-player-meta">Ур. ${p.level ?? 1} &middot; ${eloBadge(p.elo ?? 1000)}</span>`;
         return `
         <li>
           <span class="player-color-dot" style="background:${p.color || '#4fc3f7'}"></span>
@@ -250,15 +250,9 @@ const UI = (() => {
       const medal = ['\ud83e\udd47', '\ud83e\udd48', '\ud83e\udd49'][i] || '';
       const profileUrl = '/profile/' + encodeURIComponent(p.nickname);
       const delta = eloChanges[p.nickname];
-      let eloHtml = '';
-      if (delta !== undefined) {
-        let cls, sign;
-        if (delta > 0)      { cls = 'elo-gain'; sign = '+'; }
-        else if (delta < 0) { cls = 'elo-loss'; sign = ''; }
-        else                { cls = 'elo-zero'; sign = ''; }
-        const curElo = p.elo != null ? ` → <span class="lb-elo-cur">${p.elo}</span>` : '';
-        eloHtml = `<span class="lb-elo ${cls}">${sign}${delta}${curElo} ЭЛО</span>`;
-      }
+      const eloHtml = (delta !== undefined && p.elo != null)
+        ? eloBadge(p.elo, delta)
+        : (p.elo != null ? eloBadge(p.elo) : '');
       return `
       <li>
         ${p.color ? `<span class="player-color-dot" style="background:${p.color}"></span>` : ''}
@@ -482,6 +476,26 @@ const UI = (() => {
     return div.innerHTML;
   }
 
+  /**
+   * Генерирует HTML единого .elo-badge.
+   * @param {number} elo         — текущее ЭЛО игрока
+   * @param {number|null} delta  — изменение за матч (опционально)
+   * @returns {string} HTML-строка
+   */
+  function eloBadge(elo, delta = null) {
+    const tierCls = elo >= 1400 ? 'elo-tier-gold'
+                  : elo >= 1150 ? 'elo-tier-silver'
+                  : elo <  950  ? 'elo-tier-bronze'
+                  : '';
+    let deltaHtml = '';
+    if (delta !== null && delta !== undefined) {
+      const sign = delta > 0 ? '+' : '';
+      const cls  = delta > 0 ? 'gain' : delta < 0 ? 'loss' : 'zero';
+      deltaHtml = `<span class="elo-delta ${cls}">${sign}${delta}</span><span class="elo-sep">→</span>`;
+    }
+    return `<span class="elo-badge ${tierCls}">${deltaHtml}${elo}&nbsp;ЭЛО</span>`;
+  }
+
   return {
     showScreen,
     showModal,
@@ -512,5 +526,6 @@ const UI = (() => {
     showSoloLoading,
     updateSoloLoadingProgress,
     escapeHtml,
+    eloBadge,
   };
 })();

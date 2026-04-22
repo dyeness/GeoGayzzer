@@ -102,7 +102,7 @@
     const eloEl = document.getElementById('meta-elo');
     if (eloEl) {
       const eloVal = prof.elo ?? 1000;
-      eloEl.textContent = `${fmt(eloVal)} ЭЛО`;
+      eloEl.innerHTML = UI.eloBadge(eloVal);
     }
 
     /* Records tab */
@@ -213,12 +213,9 @@
 
     container.innerHTML = history.map((g, idx) => {
       const medal = g.placement === 1 ? '🥇' : g.placement === 2 ? '🥈' : g.placement === 3 ? '🥉' : `${g.placement}-е`;
-      const eloCls = g.eloDelta > 0 ? 'elo-gain' : g.eloDelta < 0 ? 'elo-loss' : 'elo-zero';
-      const eloSign = g.eloDelta > 0 ? '+' : '';
-      const eloStr = g.eloDelta !== undefined
-        ? `<span class="${eloCls}">${eloSign}${g.eloDelta} ЭЛО</span>`
+      const eloBadgeHtml = g.newElo != null
+        ? UI.eloBadge(g.newElo, g.eloDelta)
         : '';
-      const newEloStr = g.newElo != null ? ` → ${g.newElo}` : '';
 
       const opponents = (g.opponents || []).map(op => {
         const opMedal = op.matchPlacement === 1 ? '🥇' : op.matchPlacement === 2 ? '🥈' : op.matchPlacement === 3 ? '🥉' : `${op.matchPlacement}.`;
@@ -235,7 +232,7 @@
           <span class="gh-date">${fmtDate(g.date)}</span>
           <span class="gh-place">${medal}</span>
           <span class="gh-score">${g.totalScore.toLocaleString()} pts</span>
-          <span class="gh-elo">${eloStr}${newEloStr ? `<span class="gh-new-elo">${newEloStr}</span>` : ''}</span>
+          <span class="gh-elo">${eloBadgeHtml}</span>
           <span class="gh-chevron">▼</span>
         </div>
         <div class="gh-body" hidden>

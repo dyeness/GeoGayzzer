@@ -50,7 +50,6 @@
           ? `<span class="player-row-rank-medal">${medals[i]}</span>`
           : `<span class="player-row-rank">${i + 1}</span>`;
         const elo = p.elo ?? 1000;
-        const eloCls = elo >= 1350 ? 'elo-tier-gold' : elo >= 1150 ? 'elo-tier-silver' : elo < 1000 ? 'elo-tier-bronze' : '';
         const delay = i * 55;
         return `
         <a href="/profile/${encodeURIComponent(p.nickname)}" class="player-row" style="--card-delay:${delay}ms;">
@@ -60,7 +59,7 @@
             <span class="player-row-nick">${UI.escapeHtml(p.nickname)}${prestige}</span>
             <span class="player-row-sub">Ур.&nbsp;${p.level} · ${p.gamesPlayed}&nbsp;игр · ${(p.totalXp || 0).toLocaleString()}&nbsp;XP</span>
           </div>
-          <span class="player-row-elo ${eloCls}">${elo.toLocaleString()}&nbsp;ЭЛО</span>
+          <span class="player-row-elo">${UI.eloBadge(elo)}</span>
         </a>`;
       }).join('');
     } catch (e) {
