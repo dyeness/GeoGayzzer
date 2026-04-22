@@ -304,7 +304,7 @@ function updateAfterRound(roundResults) {
  * @returns {{ [nickname]: number }} - ELO delta per player (can be negative)
  */
 function calcEloChanges(players) {
-  const K = 32;
+  const K = 48;
   const changes = {};
   players.forEach(p => { changes[p.nickname] = 0; });
 

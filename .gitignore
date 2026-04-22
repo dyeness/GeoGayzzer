@@ -12,3 +12,5 @@ server/panorama-plays.json
 server/profiles.json
 server/accounts.json
 template/
+# Админский README (не публиковать)
+ADMIN_README.md
