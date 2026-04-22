@@ -96,8 +96,8 @@
       `${fmt(prof.currentXp)} / ${fmt(prof.xpNeeded)} XP`;
 
     /* Meta row */
-    document.getElementById('meta-games').textContent   = `${prof.gamesPlayed} ${declension(prof.gamesPlayed, 'игра', 'игры', 'игр')}`;
-    document.getElementById('meta-rounds').textContent  = `${prof.roundsPlayed} ${declension(prof.roundsPlayed, 'раунд', 'раунда', 'раундов')}`;
+    document.getElementById('meta-games').textContent   = declension(prof.gamesPlayed, 'игра', 'игры', 'игр');
+    document.getElementById('meta-rounds').textContent  = declension(prof.roundsPlayed, 'раунд', 'раунда', 'раундов');
     document.getElementById('meta-total-xp').textContent = `${fmt(prof.totalXp)} XP всего`;
     const eloEl = document.getElementById('meta-elo');
     if (eloEl) {
