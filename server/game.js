@@ -212,7 +212,10 @@ class GameRoom {
         const accurate = e.distance !== null && e.distance < STREAK_KM;
         e.player.streak = accurate ? (e.player.streak || 0) + 1 : 0;
         const s = e.player.streak;
-        const bonus = s >= 7 ? 1000 : s >= 5 ? 500 : s >= 3 ? 200 : 0;
+        let bonus = 0;
+        if (s >= 4) bonus = 1000;
+        else if (s === 3) bonus = 500;
+        else if (s === 2) bonus = 200;
         if (bonus > 0) { e.score += bonus; e.streakBonus = bonus; }
       }
     }
