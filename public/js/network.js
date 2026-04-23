@@ -153,6 +153,7 @@ const Network = (() => {
     onResolvingPanoramas: null,
     onGameError: null,
     onReadyUpdate: null,
+    onChatMessage: null,
   };
 
   function on(event, cb) {
@@ -198,9 +199,18 @@ const Network = (() => {
       callbacks.onReadyUpdate?.(data);
     });
 
+    socket.on('chat-message', (data) => {
+      callbacks.onChatMessage?.(data);
+    });
+
     socket.on('disconnect', () => {
       console.log('Disconnected from server');
     });
+  }
+
+  function sendChat(roomCode, text) {
+    if (!socket) return;
+    socket.emit('chat-message', { text });
   }
 
   return {
@@ -216,6 +226,7 @@ const Network = (() => {
     updateColor,
     requestNextRound,
     getRooms,
+    sendChat,
     on,
   };
 })();

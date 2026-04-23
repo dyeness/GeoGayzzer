@@ -75,6 +75,24 @@
         <button id="btn-lb-toggle" class="game-lb-toggle" title="Свернуть">−</button>
       </div>
       <ol id="game-lb-list" class="game-lb-list"></ol>
+      <!-- Chat toggle button always below leaderboard -->
+      <button id="btn-game-chat-toggle" class="game-chat-toggle-btn">
+        💬 Чат
+        <span id="game-chat-unread" class="game-chat-unread-dot hidden"></span>
+      </button>
+    </div>
+
+    <!-- In-game floating chat panel -->
+    <div id="game-chat-panel" class="game-chat-panel hidden">
+      <div class="game-chat-header">
+        <span>💬 Чат</span>
+        <button id="btn-game-chat-close" class="game-chat-close">✕</button>
+      </div>
+      <div class="game-chat-messages" id="game-chat-messages"></div>
+      <div class="game-chat-input-row">
+        <input type="text" id="game-chat-input" class="game-chat-input" placeholder="Написать..." maxlength="200" autocomplete="off" />
+        <button id="game-chat-send" class="btn btn-sm btn-primary">↵</button>
+      </div>
     </div>
 
     <!-- Mini-map -->

@@ -70,14 +70,19 @@
         </div>
       </div>
       <div class="lobby-actions">
-        <!-- Host-only: exclude specific panorama IDs from the game -->
-        <div id="exclude-pano-row" class="exclude-pano-row" style="display:none;">
-          <label for="exclude-pano-input" class="text-muted" style="font-size:13px;">Исключить панорамы (ID через запятую):</label>
-          <input type="text" id="exclude-pano-input" class="input-sm" placeholder="Вставь ID панорам..." autocomplete="off" />
-        </div>
         <button id="btn-start-game" class="btn btn-primary btn-lg" style="display:none;">Начать игру</button>
         <p id="lobby-wait-msg" class="text-muted">Ожидание хоста...</p>
         <button id="btn-leave-lobby" class="btn btn-outline">Покинуть комнату</button>
+      </div>
+
+      <!-- Lobby Chat -->
+      <div class="lobby-chat">
+        <div class="lobby-chat-header">💬 Чат</div>
+        <div class="lobby-chat-messages" id="lobby-chat-messages"></div>
+        <div class="lobby-chat-input-row">
+          <input type="text" id="lobby-chat-input" class="lobby-chat-input" placeholder="Написать сообщение..." maxlength="200" autocomplete="off" />
+          <button id="lobby-chat-send" class="btn btn-sm btn-primary">↵</button>
+        </div>
       </div>
 
       <!-- Progress overlay shown while server resolves panoramas -->

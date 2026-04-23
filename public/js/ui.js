@@ -462,7 +462,7 @@ const UI = (() => {
       <li class="game-lb-item${i === 0 ? ' game-lb-leader' : ''}">
         <span class="game-lb-rank">${i + 1}</span>
         ${r.color ? `<span class="game-lb-dot" style="background:${r.color}"></span>` : ''}
-        <span class="game-lb-nick">${escapeHtml(r.nickname)}</span>
+        <span class="game-lb-nick">${escapeHtml(r.nickname)}${r.elo != null ? `<span class="game-lb-elo"> ${r.elo} ЭЛО</span>` : ''}</span>
         <span class="game-lb-score">${r.totalScore.toLocaleString()}</span>
       </li>
     `).join('');

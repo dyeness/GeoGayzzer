@@ -50,6 +50,38 @@
       if (btn) { btn.disabled = false; btn.textContent = 'Начать игру'; }
       alert(data?.message || 'Ошибка при старте игры');
     });
+    // Chat
+    Network.on('onChatMessage', (data) => {
+      _appendLobbyChatMsg(data);
+    });
+  }
+
+  function _appendLobbyChatMsg({ nickname, text, system = false }) {
+    const box = document.getElementById('lobby-chat-messages');
+    if (!box) return;
+    const el = document.createElement('div');
+    el.className = 'chat-msg' + (system ? ' chat-msg-system' : '');
+    if (system) {
+      el.textContent = text;
+    } else {
+      const nick = document.createElement('span');
+      nick.className = 'chat-msg-nick';
+      nick.style.color = '#cc6666';
+      nick.textContent = nickname + ':';
+      el.appendChild(nick);
+      el.appendChild(document.createTextNode(' ' + text));
+    }
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function _sendLobbyChatMsg() {
+    const input = document.getElementById('lobby-chat-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    Network.sendChat(roomCode, text);
+    input.value = '';
   }
 
   function _bindUiEvents() {
@@ -87,6 +119,12 @@
 
     document.getElementById('btn-copy-code')?.addEventListener('click', () => {
       navigator.clipboard?.writeText(roomCode);
+    });
+
+    // Chat
+    document.getElementById('lobby-chat-send')?.addEventListener('click', _sendLobbyChatMsg);
+    document.getElementById('lobby-chat-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') _sendLobbyChatMsg();
     });
   }
 

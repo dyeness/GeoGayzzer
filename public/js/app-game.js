@@ -207,6 +207,7 @@
     }
 
     _bindNetworkEvents();
+    _initGameChat();
   }
 
   function _bindNetworkEvents() {
@@ -222,6 +223,69 @@
     Network.on('onReadyUpdate', (data) => {
       UI.showReadyStatus(data.readyCount, data.total);
     });
+    // Game chat
+    Network.on('onChatMessage', (data) => {
+      _appendGameChatMsg(data);
+    });
+  }
+
+  function _appendGameChatMsg({ nickname, text, system = false }) {
+    const box = document.getElementById('game-chat-messages');
+    if (!box) return;
+    const el = document.createElement('div');
+    el.className = 'chat-msg' + (system ? ' chat-msg-system' : '');
+    if (system) {
+      el.textContent = text;
+    } else {
+      const nick = document.createElement('span');
+      nick.className = 'chat-msg-nick';
+      nick.style.color = '#cc6666';
+      nick.textContent = nickname + ':';
+      el.appendChild(nick);
+      el.appendChild(document.createTextNode(' ' + text));
+    }
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+
+    // Show unread dot if panel is closed
+    const panel = document.getElementById('game-chat-panel');
+    if (panel && panel.classList.contains('hidden')) {
+      const dot = document.getElementById('game-chat-unread');
+      if (dot) {
+        dot.classList.remove('hidden');
+        dot.classList.add('blinking');
+      }
+    }
+  }
+
+  function _initGameChat() {
+    const panel = document.getElementById('game-chat-panel');
+    const toggleBtn = document.getElementById('btn-game-chat-toggle');
+    const closeBtn = document.getElementById('btn-game-chat-close');
+    const input = document.getElementById('game-chat-input');
+    const sendBtn = document.getElementById('game-chat-send');
+    const dot = document.getElementById('game-chat-unread');
+    if (!panel || !toggleBtn) return;
+
+    toggleBtn.addEventListener('click', () => {
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        if (dot) { dot.classList.add('hidden'); dot.classList.remove('blinking'); }
+        input?.focus();
+      }
+    });
+    closeBtn?.addEventListener('click', () => {
+      panel.classList.add('hidden');
+    });
+
+    function sendMsg() {
+      const text = input?.value.trim();
+      if (!text || !roomCode) return;
+      Network.sendChat(roomCode, text);
+      input.value = '';
+    }
+    sendBtn?.addEventListener('click', sendMsg);
+    input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
   }
 
   async function handleMultiRoundStart(data) {

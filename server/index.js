@@ -858,9 +858,14 @@ io.on('connection', (socket) => {
     // If all guesses are in, finalize the round
     if (room.allGuessesIn()) {
       const results = room.finalizeRound(scoring);
+      // Enrich results with current ELO for client display
+      const enrichedResults = results.map(r => ({
+        ...r,
+        elo: profiles.getProfile(r.nickname)?.elo ?? 1000,
+      }));
       const loc = room.getCurrentLocation();
       io.to(room.code).emit('round-results', {
-        results,
+        results: enrichedResults,
         location: loc,
         round: room.currentRound + 1,
         isLastRound: room.currentRound + 1 >= room.totalRounds,
@@ -879,6 +884,21 @@ io.on('connection', (socket) => {
       }));
       profiles.updateAfterRound(roundProfileData);
     }
+  });
+
+  /* Chat messages (lobby and in-game) */
+  socket.on('chat-message', ({ text }) => {
+    const room = getRoomByPlayer(socket.id);
+    if (!room) return;
+    const player = room.players.get(socket.id);
+    if (!player || typeof text !== 'string') return;
+    const safe = text.trim().slice(0, 200);
+    if (!safe) return;
+    io.to(room.code).emit('chat-message', {
+      nickname: player.nickname,
+      color: player.color,
+      text: safe,
+    });
   });
 
   /* Update player color in room */
@@ -970,6 +990,22 @@ io.on('connection', (socket) => {
         // If the player rejoined, their entry was moved to a new socket.id key.
         const still = room.players.get(socket.id);
         if (still?._pendingRemove) {
+          // ELO penalty for disconnecting mid-game without reconnecting
+          if (room.status === 'playing' && player?.nickname) {
+            const remainingCount = room.players.size - 1; // excluding this player
+            if (remainingCount > 0) {
+              const K = 32;
+              // Simulate losing to every remaining player
+              const lossScore = 0;
+              const expectedScore = 1 / (remainingCount + 1);
+              const delta = Math.round(K * (lossScore - expectedScore) * (remainingCount + 1) * 0.5);
+              const prof = profiles.getProfile(player.nickname);
+              if (prof) {
+                prof.elo = Math.max(100, (prof.elo ?? 1000) + delta);
+                console.log(`📉 ELO penalty for ${player.nickname}: ${delta} → ${prof.elo}`);
+              }
+            }
+          }
           room.removePlayer(socket.id);
           if (room.players.size === 0) {
             deleteRoom(room.code);

@@ -491,15 +491,20 @@
 .result-player-nick { flex: 1; font-weight: 500; }
 .result-player-score { color: var(--text-secondary); white-space: nowrap; }
 .steal-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   margin-left: 6px;
-  padding: 1px 6px;
+  padding: 2px 8px;
   background: rgba(255, 80, 80, 0.18);
   color: #ff6b6b;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
+  border: 1px solid rgba(255, 80, 80, 0.25);
+  font-family: var(--font-family);
+  letter-spacing: 0.5px;
 }
 
 /* ── Stats ── */
