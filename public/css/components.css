@@ -624,7 +624,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  background: var(--bg-card);
+  background-color: var(--bg-card);
   border-radius: var(--radius-md);
   padding: 14px 18px;
   border: 1px solid var(--border-color);
@@ -635,7 +635,7 @@
   animation-delay: var(--card-delay, 0ms);
   transition:
     border-color 0.2s ease,
-    background   0.2s ease,
+    background-color 0.2s ease,
     box-shadow   0.2s ease;
 }
 
@@ -667,7 +667,7 @@
 
 .player-row:hover {
   border-color: var(--border-red);
-  background: var(--bg-elevated);
+  background-color: var(--bg-elevated);
   box-shadow: var(--glow-sm);
 }
 .player-row:hover::before { left: 130%; }
@@ -738,13 +738,13 @@
   flex-shrink: 0;
 }
 
-/* ── Banner on player-row (CSS multi-background: overlay + gif) ── */
+/* ── Banner on player-row ── */
 .player-row.has-banner {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.62)),
-    var(--row-banner);
-  background-size: cover;
-  background-position: center;
+    var(--row-banner) !important;
+  background-size: cover !important;
+  background-position: center !important;
 }
 
 /* ── Banner on final leaderboard rows ── */
@@ -756,9 +756,9 @@
 .lb-row.has-banner {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.62)),
-    var(--row-banner);
-  background-size: cover;
-  background-position: center;
+    var(--row-banner) !important;
+  background-size: cover !important;
+  background-position: center !important;
   padding: 6px 10px;
 }
 

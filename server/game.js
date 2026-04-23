@@ -161,8 +161,8 @@ class GameRoom {
     if (this.roundTimer) { clearTimeout(this.roundTimer); this.roundTimer = null; }
 
     const location       = this.getCurrentLocation();
-    const STEAL_RADIUS   = 100;   // km
-    const STEAL_FRACTION = 0.20;
+    const STEAL_RADIUS   = 50;   // km
+    const STEAL_FRACTION = 0.10;
     const STREAK_KM      = 500;   // accurate = within 500 km
 
     /* ── Step 1: base scores ── */

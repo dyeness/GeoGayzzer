@@ -311,7 +311,7 @@ const UI = (() => {
         : (p.elo != null ? eloBadge(p.elo) : '');
       const bannerGifUrl = resolveBannerUrl(p.banner || null);
       const bannerBg = bannerGifUrl
-        ? `style="--row-banner:url('${bannerGifUrl}')"` : '';
+        ? `style="--row-banner:url('${bannerGifUrl}');background-image:linear-gradient(rgba(0,0,0,.62),rgba(0,0,0,.62)),url('${bannerGifUrl}');background-size:cover;background-position:center"` : '';
       const bannerCls = bannerGifUrl ? ' has-banner' : '';
       return `
       <li class="lb-row${bannerCls}" ${bannerBg}>
@@ -356,7 +356,9 @@ const UI = (() => {
           : `${i + 1}`;
         const prestige = p.prestige > 0 ? `<span class="player-row-prestige">${p.prestige}💎</span>` : '';
         const bannerGifUrl = resolveBannerUrl(p.banner || null);
-        const bannerStyle  = bannerGifUrl ? ` --row-banner:url('${bannerGifUrl}')` : '';
+        const bannerStyle  = bannerGifUrl
+          ? `--row-banner:url('${bannerGifUrl}');background-image:linear-gradient(rgba(0,0,0,.62),rgba(0,0,0,.62)),url('${bannerGifUrl}');background-size:cover;background-position:center;`
+          : '';
         const hasBannerCls = bannerGifUrl ? ' has-banner' : '';
         return `<a href="${profileUrl}" class="player-row${hasBannerCls}" style="text-decoration:none;color:inherit;${bannerStyle}">
           <span class="player-row-rank${i < 3 ? '-medal' : ''}">${rankDisplay}</span>
