@@ -33,6 +33,15 @@
         <h3>Игроки <span id="lobby-player-count">(0/10)</span></h3>
         <ul id="lobby-player-list"></ul>
       </div>
+      <!-- Team selector (visible to all when host enables team mode) -->
+      <div id="team-selector" class="team-selector hidden">
+        <div class="team-selector-title">Выберите команду:</div>
+        <div class="team-selector-btns">
+          <button id="btn-team-0" class="btn-team btn-team-0">🔴 Красные</button>
+          <button id="btn-team-1" class="btn-team btn-team-1">🔵 Синие</button>
+        </div>
+      </div>
+
       <!-- Color picker -->
       <div class="color-picker-row">
         <span class="color-picker-label">Цвет:</span>

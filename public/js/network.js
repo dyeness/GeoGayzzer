@@ -155,6 +155,7 @@ const Network = (() => {
     onReadyUpdate: null,
     onChatMessage: null,
     onRoundTimerStart: null,
+    onRoomSettings: null,
   };
 
   function on(event, cb) {
@@ -212,6 +213,10 @@ const Network = (() => {
       callbacks.onRoundTimerStart?.({ secs: 0 });
     });
 
+    socket.on('room-settings', (data) => {
+      callbacks.onRoomSettings?.(data);
+    });
+
     socket.on('disconnect', () => {
       console.log('Disconnected from server');
     });
@@ -220,6 +225,26 @@ const Network = (() => {
   function sendChat(roomCode, text) {
     if (!socket) return;
     socket.emit('chat-message', { text });
+  }
+
+  function selectTeam(team) {
+    return new Promise((resolve, reject) => {
+      if (!socket) return reject(new Error('Not connected'));
+      socket.emit('select-team', { team }, (response) => {
+        if (response?.success) resolve(response);
+        else reject(new Error(response?.error || 'Failed'));
+      });
+    });
+  }
+
+  function updateRoomSettings(settings) {
+    return new Promise((resolve, reject) => {
+      if (!socket) return reject(new Error('Not connected'));
+      socket.emit('update-room-settings', settings, (response) => {
+        if (response?.success) resolve(response);
+        else reject(new Error(response?.error || 'Failed'));
+      });
+    });
   }
 
   return {
@@ -236,6 +261,8 @@ const Network = (() => {
     requestNextRound,
     getRooms,
     sendChat,
+    selectTeam,
+    updateRoomSettings,
     on,
   };
 })();

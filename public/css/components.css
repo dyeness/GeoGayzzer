@@ -1053,3 +1053,70 @@
   padding-left: 16px !important;
 }
 
+
+/* ══ Team Selector in Lobby ═══════════════════════════════════════ */
+.team-selector {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-red);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  text-align: center;
+}
+.team-selector.hidden { display: none; }
+.team-selector-title {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+.team-selector-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.btn-team {
+  flex: 1;
+  max-width: 140px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  font-family: var(--font-family);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+}
+.btn-team-0 {
+  border-color: rgba(229, 57, 53, 0.35);
+  color: #e57373;
+}
+.btn-team-0:hover, .btn-team-0.active {
+  background: rgba(229, 57, 53, 0.18);
+  border-color: #e53935;
+  color: #ef9a9a;
+  box-shadow: 0 0 8px rgba(229, 57, 53, 0.3);
+}
+.btn-team-1 {
+  border-color: rgba(30, 136, 229, 0.35);
+  color: #64b5f6;
+}
+.btn-team-1:hover, .btn-team-1.active {
+  background: rgba(30, 136, 229, 0.18);
+  border-color: #1e88e5;
+  color: #90caf9;
+  box-shadow: 0 0 8px rgba(30, 136, 229, 0.3);
+}
+
+/* ══ Team badge in lobby player list ════════════════════════════ */
+.team-badge-sm {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1;
+  margin: 0 3px;
+  vertical-align: middle;
+}

@@ -96,15 +96,19 @@ const UI = (() => {
     if (countEl) countEl.textContent = `(${players.length}/10)`;
 
     if (listEl) {
-      listEl.innerHTML = players.map((p) => {
+  listEl.innerHTML = players.map((p) => {
         const prestige = (p.prestige || 0) > 0
           ? ` <span class="prestige-sm">[${p.prestige}\ud83d\udc8e]</span>`
           : '';
         const meta = `<span class="lobby-player-meta">Ур. ${p.level ?? 1} &middot; ${eloBadge(p.elo ?? 1000)}</span>`;
+        const teamBadge = p.preTeam === 0 ? '<span class="team-badge-sm team-red">🔴</span>'
+                        : p.preTeam === 1 ? '<span class="team-badge-sm team-blue">🔵</span>'
+                        : '';
         return `
         <li>
           <span class="player-color-dot" style="background:${p.color || '#4fc3f7'}"></span>
           <span class="lobby-player-name">${escapeHtml(p.nickname)}${prestige}</span>
+          ${teamBadge}
           ${meta}
           ${p.isHost ? '<span class="host-badge">\u0425\u043e\u0441\u0442</span>' : ''}
           ${p.isReady ? '<span class="ready-badge">\u2705</span>' : ''}
@@ -226,14 +230,19 @@ const UI = (() => {
       listEl.innerHTML = scores.map((score, i) => {
         const loc = locations[i];
         const dist = distances[i];
+        let locName;
+        if (loc) {
+          if (loc.city)         locName = loc.country ? `${loc.city}, ${loc.country}` : loc.city;
+          else if (loc.country) locName = loc.country;
+          else if (loc.name)    locName = loc.country ? `${loc.name}, ${loc.country}` : loc.name;
+          else                  locName = `${loc.lat?.toFixed(4)}, ${loc.lng?.toFixed(4)}`;
+        } else {
+          locName = `Раунд ${i + 1}`;
+        }
         return `
           <div class="round-item">
             <div class="round-item-info">
-              <span class="round-item-name">${loc ? `${loc.name}, ${loc.country}` : `Раунд ${i + 1}`}</span>
-              <span class="round-item-distance">${Scoring.formatDistance(dist)}</span>
-            </div>
-            <span class="round-item-score">${score.toLocaleString()}</span>
-          </div>
+              <span class="round-item-name">${locName}</span>
         `;
       }).join('');
     }

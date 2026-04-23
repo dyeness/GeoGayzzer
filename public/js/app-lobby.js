@@ -32,6 +32,7 @@
     Network.on('onPlayerJoined', (data) => {
       UI.updateLobby(roomCode, data.players, GameState.get('isHost'));
       _updateTakenSwatches(data.players);
+      _syncMyTeamBtn(data.players);
     });
     Network.on('onPlayerLeft', (data) => {
       UI.updateLobby(roomCode, data.players, GameState.get('isHost'));
@@ -53,6 +54,10 @@
     // Chat
     Network.on('onChatMessage', (data) => {
       _appendLobbyChatMsg(data);
+    });
+    // Live settings update from host
+    Network.on('onRoomSettings', (data) => {
+      _updateTeamSelector(!!data.teamMode);
     });
   }
 
@@ -82,6 +87,44 @@
     if (!text) return;
     Network.sendChat(roomCode, text);
     input.value = '';
+  }
+
+  /* ── Team-selector helpers ── */
+
+  function _updateTeamSelector(visible) {
+    document.getElementById('team-selector')?.classList.toggle('hidden', !visible);
+  }
+
+  function _syncMyTeamBtn(players) {
+    const myNick = GameState.get('nickname');
+    const me = players.find(p => p.nickname === myNick);
+    _setActiveTeamBtn(me?.preTeam ?? null);
+  }
+
+  function _setActiveTeamBtn(team) {
+    document.getElementById('btn-team-0')?.classList.toggle('active', team === 0);
+    document.getElementById('btn-team-1')?.classList.toggle('active', team === 1);
+  }
+
+  /* ── Settings persistence ── */
+
+  const SETTINGS_KEY = 'geoGAYZZER_lobbySettings';
+
+  function _saveSettings() {
+    const get = id => document.getElementById(id)?.value ?? null;
+    const settings = { mode: get('setting-mode'), rounds: get('setting-rounds'), timer: get('setting-timer'), streak: get('setting-streak') };
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+  }
+
+  function _restoreSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+      if (!saved) return;
+      const map = { 'setting-mode': saved.mode, 'setting-rounds': saved.rounds, 'setting-timer': saved.timer, 'setting-streak': saved.streak };
+      for (const [id, val] of Object.entries(map)) {
+        if (val) { const el = document.getElementById(id); if (el) el.value = val; }
+      }
+    } catch {}
   }
 
   function _bindUiEvents() {
@@ -127,6 +170,28 @@
       navigator.clipboard?.writeText(roomCode);
     });
 
+    // Settings: auto-save on change; team mode also broadcasts live update
+    ['setting-mode', 'setting-rounds', 'setting-timer', 'setting-streak'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+        _saveSettings();
+        if (id === 'setting-mode') {
+          const teamMode = document.getElementById('setting-mode')?.value === 'team';
+          Network.updateRoomSettings({ teamMode }).catch(() => {});
+          _updateTeamSelector(teamMode);
+        }
+      });
+    });
+
+    // Team selection buttons (visible to all players)
+    document.getElementById('btn-team-0')?.addEventListener('click', () => {
+      Network.selectTeam(0).catch(() => {});
+      _setActiveTeamBtn(0);
+    });
+    document.getElementById('btn-team-1')?.addEventListener('click', () => {
+      Network.selectTeam(1).catch(() => {});
+      _setActiveTeamBtn(1);
+    });
+
     // Chat
     document.getElementById('lobby-chat-send')?.addEventListener('click', _sendLobbyChatMsg);
     document.getElementById('lobby-chat-input')?.addEventListener('keydown', (e) => {
@@ -160,6 +225,10 @@
       GameState.set('mode', 'multiplayer');
 
       UI.updateLobby(roomCode, data.players, data.isHost);
+      _restoreSettings();
+      // Apply restored team mode to selector
+      const isTeamMode = document.getElementById('setting-mode')?.value === 'team';
+      _updateTeamSelector(isTeamMode);
       _restoreColor();
       _updateTakenSwatches(data.players);
 

@@ -420,6 +420,7 @@ async function findMapillaryImageOnServer(lat, lng) {
       // Skip panoramas already used this session
       if (sessionUsed.has(img.id)) { await sleep(50); continue; }
       console.log('[findMapillaryImage] found after ' + (attempt + 1) + ' attempt(s): ' + img.id);
+      await sleep(1100); // Nominatim rate-limit: max 1 req/sec
       const geo = await reverseGeocode(coords[1], coords[0]);
       const result = { id: img.id, lat: coords[1], lng: coords[0], country: geo.country, city: geo.city };
       addToCache(result);
@@ -827,6 +828,9 @@ io.on('connection', (socket) => {
       const [oldId, playerData] = oldEntry;
       room.players.set(socket.id, { ...playerData, socketId: socket.id, _pendingRemove: false });
       room.players.delete(oldId);
+      // Transfer team assignments to new socketId
+      if (room.teams.has(oldId))    { room.teams.set(socket.id, room.teams.get(oldId));       room.teams.delete(oldId); }
+      if (room.preTeams.has(oldId)) { room.preTeams.set(socket.id, room.preTeams.get(oldId)); room.preTeams.delete(oldId); }
       if (room.readySet?.has(oldId)) { room.readySet.delete(oldId); room.readySet.add(socket.id); }
       if (room.hostId === oldId) room.hostId = socket.id;
       socket.join(room.code);
@@ -851,6 +855,27 @@ io.on('connection', (socket) => {
     } else {
       cb({ success: false, error: 'Игра завершена' });
     }
+  });
+
+  /* Host broadcasts live settings change (e.g. team mode toggle) */
+  socket.on('update-room-settings', (data, cb) => {
+    const room = getRoomByPlayer(socket.id);
+    if (!room || room.hostId !== socket.id) return cb?.({ success: false, error: 'Нет прав' });
+    if (room.status !== 'waiting') return cb?.({ success: false, error: 'Игра уже началась' });
+    if (typeof data?.teamMode === 'boolean') room.teamMode = data.teamMode;
+    io.to(room.code).emit('room-settings', { teamMode: room.teamMode });
+    io.to(room.code).emit('player-joined', { players: enrichedPlayerList(room) });
+    cb?.({ success: true });
+  });
+
+  /* Player selects their team before game start */
+  socket.on('select-team', ({ team }, cb) => {
+    const room = getRoomByPlayer(socket.id);
+    if (!room || room.status !== 'waiting') return cb?.({ success: false });
+    if (team !== 0 && team !== 1) return cb?.({ success: false, error: 'Неверная команда' });
+    room.setPreTeam(socket.id, team);
+    io.to(room.code).emit('player-joined', { players: enrichedPlayerList(room) });
+    cb?.({ success: true });
   });
 
   /* Host starts the game */

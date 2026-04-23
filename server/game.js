@@ -37,7 +37,8 @@ class GameRoom {
     this.streakBonusEnabled  = true;  // bonus for N consecutive accurate rounds
 
     /* ── Runtime state ── */
-    this.teams         = new Map(); // socketId → 0 | 1
+    this.preTeams      = new Map(); // socketId → 0 | 1  (player-chosen before game)
+    this.teams         = new Map(); // socketId → 0 | 1  (active during game)
     this.teamScores    = [0, 0];
     this.roundTimer    = null;      // setTimeout handle
     this.roundFinalized = false;    // prevents double-finalize
@@ -63,6 +64,7 @@ class GameRoom {
     this.roundGuesses.delete(socketId);
     this.readySet.delete(socketId);
     this.teams.delete(socketId);
+    this.preTeams.delete(socketId);
   }
 
   getPlayerList() {
@@ -74,6 +76,7 @@ class GameRoom {
       isHost:   id === this.hostId,
       isReady:  this.readySet.has(id),
       team:     this.teamMode ? (this.teams.get(id) ?? null) : null,
+      preTeam:  this.teamMode ? (this.preTeams.get(id) ?? null) : null,
       streak:   p.streak,
     }));
   }
@@ -88,15 +91,28 @@ class GameRoom {
   clearReady() { this.readySet.clear(); }
   getReadyCount() { return this.readySet.size; }
 
+  /** Store a pre-game team preference for a player. */
+  setPreTeam(socketId, team) {
+    if (team === 0 || team === 1) this.preTeams.set(socketId, team);
+  }
+
   /* ───── Team assignment (balanced by join order) ───── */
 
   _assignTeams() {
-    this.teams.clear();
     this.teamScores = [0, 0];
-    let i = 0;
-    for (const socketId of this.players.keys()) {
-      this.teams.set(socketId, i % 2);
-      i++;
+    this.teams.clear();
+    // Step 1: honour pre-selected teams
+    for (const [sid] of this.players) {
+      const pre = this.preTeams.get(sid);
+      if (pre === 0 || pre === 1) this.teams.set(sid, pre);
+    }
+    // Step 2: balance remaining unassigned players
+    for (const [sid] of this.players) {
+      if (!this.teams.has(sid)) {
+        const c0 = [...this.teams.values()].filter(t => t === 0).length;
+        const c1 = [...this.teams.values()].filter(t => t === 1).length;
+        this.teams.set(sid, c0 <= c1 ? 0 : 1);
+      }
     }
   }
 
