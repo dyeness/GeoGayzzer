@@ -227,6 +227,11 @@
     Network.on('onChatMessage', (data) => {
       _appendGameChatMsg(data);
     });
+    // Round countdown timer
+    Network.on('onRoundTimerStart', (data) => {
+      if (data.secs > 0) UI.startRoundTimer(data.secs);
+      else UI.clearRoundTimer();
+    });
   }
 
   function _appendGameChatMsg({ nickname, text, system = false }) {
@@ -316,6 +321,10 @@
 
     // Always show the leaderboard panel; update content if server sent players
     UI.showInGameLeaderboard(data.players ?? []);
+    UI.clearRoundTimer();
+
+    if (data.settings) GameState.set('gameSettings', data.settings);
+    if (data.teamScores && data.settings?.teamMode) UI.updateTeamScores(data.teamScores);
 
     if (data.imageId) {
       await Panorama.loadById(data.imageId, loc.lat, loc.lng);
@@ -346,6 +355,8 @@
     UI.showMultiplayerRoundResults(data.results, data.location);
     UI.updateHUD();
     UI.updateInGameLeaderboard(data.results);
+    UI.clearRoundTimer();
+    if (data.teamScores) UI.updateTeamScores(data.teamScores);
     setTimeout(() => GameMap.showMultiplayerGuesses(data.results, nickname), 300);
 
     UI.showReadyButton(true);

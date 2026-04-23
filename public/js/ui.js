@@ -116,6 +116,8 @@ const UI = (() => {
     if (waitMsg)  waitMsg.style.display = isHost ? 'none' : 'block';
     const excludeRow = document.getElementById('exclude-pano-row');
     if (excludeRow) excludeRow.style.display = isHost ? 'block' : 'none';
+    const settingsEl = document.getElementById('lobby-settings');
+    if (settingsEl) settingsEl.classList.toggle('hidden', !isHost);
   }
 
   /* ── Result Screen (fullscreen) ── */
@@ -129,8 +131,12 @@ const UI = (() => {
     const linkEl    = document.getElementById('result-panorama-link');
 
     if (nameEl) {
-      nameEl.textContent = location.name
-        ? `${location.name}, ${location.country}`
+      const parts = [];
+      if (location.city)    parts.push(location.city);
+      else if (location.name) parts.push(location.name);
+      if (location.country) parts.push(location.country);
+      nameEl.textContent = parts.length > 0
+        ? parts.join(', ')
         : `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
     }
     if (distEl)  distEl.textContent  = Scoring.formatDistance(distance);
@@ -174,12 +180,15 @@ const UI = (() => {
       const stealBadge = r.stolen > 0
         ? `<span class="steal-badge">+${r.stolen.toLocaleString()} 🗡️</span>`
         : '';
+      const streakBadge = r.streakBonus > 0
+        ? `<span class="streak-badge">🔥 +${r.streakBonus.toLocaleString()}</span>`
+        : '';
       const dist = r.distance !== null ? Scoring.formatDistance(r.distance) : '—';
       return `
         <li>
           <span class="result-player-dot" style="background:${r.color || '#4fc3f7'}"></span>
           <span class="result-player-nick">${escapeHtml(r.nickname)}</span>
-          <span class="result-player-score">${r.score.toLocaleString()} pts (${dist})${stealBadge}</span>
+          <span class="result-player-score">${r.score.toLocaleString()} pts (${dist})${stealBadge}${streakBadge}</span>
         </li>`;
     }).join('');
 
@@ -457,15 +466,33 @@ const UI = (() => {
     const list = document.getElementById('game-lb-list');
     if (!list) return;
 
-    const sorted = [...results].sort((a, b) => b.totalScore - a.totalScore);
-    list.innerHTML = sorted.map((r, i) => `
-      <li class="game-lb-item${i === 0 ? ' game-lb-leader' : ''}">
-        <span class="game-lb-rank">${i + 1}</span>
-        ${r.color ? `<span class="game-lb-dot" style="background:${r.color}"></span>` : ''}
-        <span class="game-lb-nick">${escapeHtml(r.nickname)}${r.elo != null ? `<span class="game-lb-elo"> ${r.elo} ЭЛО</span>` : ''}</span>
-        <span class="game-lb-score">${r.totalScore.toLocaleString()}</span>
-      </li>
-    `).join('');
+    const hasTeams = results.some(r => r.team != null);
+    if (hasTeams) {
+      const teams = [0, 1].map(t => results.filter(r => r.team === t).sort((a, b) => b.totalScore - a.totalScore));
+      const teamTotals = [0, 1].map(t => teams[t].reduce((s, r) => s + r.totalScore, 0));
+      const TEAM_ICONS  = ['🔴', '🔵'];
+      const TEAM_LABELS = ['Красные', 'Синие'];
+      const TEAM_COLORS = ['#e53935', '#1e88e5'];
+      list.innerHTML = [0, 1].map(t => {
+        const members = teams[t].map(r => `
+          <li class="game-lb-item game-lb-team-member">
+            ${r.color ? `<span class="game-lb-dot" style="background:${r.color}"></span>` : ''}
+            <span class="game-lb-nick">${escapeHtml(r.nickname)}${r.elo != null ? `<span class="game-lb-elo"> ${r.elo} ЭЛО</span>` : ''}</span>
+            <span class="game-lb-score">${r.totalScore.toLocaleString()}</span>
+          </li>`).join('');
+        return `<li class="game-lb-team-header" style="color:${TEAM_COLORS[t]}">${TEAM_ICONS[t]} ${TEAM_LABELS[t]}: ${teamTotals[t].toLocaleString()}</li>${members}`;
+      }).join('');
+    } else {
+      const sorted = [...results].sort((a, b) => b.totalScore - a.totalScore);
+      list.innerHTML = sorted.map((r, i) => `
+        <li class="game-lb-item${i === 0 ? ' game-lb-leader' : ''}">
+          <span class="game-lb-rank">${i + 1}</span>
+          ${r.color ? `<span class="game-lb-dot" style="background:${r.color}"></span>` : ''}
+          <span class="game-lb-nick">${escapeHtml(r.nickname)}${r.elo != null ? `<span class="game-lb-elo"> ${r.elo} ЭЛО</span>` : ''}</span>
+          <span class="game-lb-score">${r.totalScore.toLocaleString()}</span>
+        </li>
+      `).join('');
+    }
   }
 
   /* ── Utilities ── */
@@ -499,6 +526,42 @@ const UI = (() => {
     return `<span class="elo-badge ${tierCls}">${deltaHtml}${elo}&nbsp;ЭЛО</span>`;
   }
 
+  function startRoundTimer(secs) {
+    const el = document.getElementById('hud-timer');
+    const secsEl = document.getElementById('hud-timer-secs');
+    if (!el || !secsEl) return;
+    if (el.dataset.interval) clearInterval(Number(el.dataset.interval));
+    if (secs <= 0) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden', 'hud-timer-urgent');
+    secsEl.textContent = secs;
+    let remaining = secs;
+    const iv = setInterval(() => {
+      remaining--;
+      if (remaining <= 0) { clearInterval(iv); el.classList.add('hidden'); return; }
+      secsEl.textContent = remaining;
+      if (remaining <= 10) el.classList.add('hud-timer-urgent');
+    }, 1000);
+    el.dataset.interval = String(iv);
+  }
+
+  function clearRoundTimer() {
+    const el = document.getElementById('hud-timer');
+    if (!el) return;
+    if (el.dataset.interval) clearInterval(Number(el.dataset.interval));
+    el.classList.add('hidden');
+    el.classList.remove('hud-timer-urgent');
+  }
+
+  function updateTeamScores(teamScores) {
+    const container = document.getElementById('hud-team-scores');
+    const t0 = document.getElementById('hud-team-0');
+    const t1 = document.getElementById('hud-team-1');
+    if (!container || !teamScores) return;
+    container.classList.remove('hidden');
+    if (t0) t0.textContent = (teamScores[0] || 0).toLocaleString();
+    if (t1) t1.textContent = (teamScores[1] || 0).toLocaleString();
+  }
+
   return {
     showScreen,
     showModal,
@@ -530,5 +593,8 @@ const UI = (() => {
     updateSoloLoadingProgress,
     escapeHtml,
     eloBadge,
+    startRoundTimer,
+    clearRoundTimer,
+    updateTeamScores,
   };
 })();

@@ -839,9 +839,10 @@
 }
 
 .game-chat-panel {
-  position: absolute;
-  top: 60px;
-  left: 218px;
+  position: fixed;
+  bottom: 100px;
+  left: 16px;
+  top: auto;
   z-index: 31;
   width: 260px;
   background: rgba(8, 8, 9, 0.92);
@@ -916,5 +917,139 @@
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+
+/* ══ Lobby Settings ═══════════════════════════════════════════════ */
+.lobby-settings {
+  margin-top: 16px;
+  text-align: left;
+  border: 1px solid var(--border-red);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+.settings-title {
+  padding: 8px 14px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-red);
+  margin: 0;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  flex: 1;
+}
+.setting-select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+}
+.setting-select:focus { border-color: var(--accent-primary); }
+
+/* ══ Chat — force left alignment ══════════════════════════════════ */
+.lobby-chat-messages,
+.game-chat-messages {
+  text-align: left;
+}
+.chat-msg {
+  text-align: left;
+}
+
+/* ══ Round timer HUD ══════════════════════════════════════════════ */
+.hud-timer {
+  background: rgba(8,8,9,0.82);
+  backdrop-filter: blur(10px);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  border: 1px solid var(--border-red);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hud-timer strong {
+  color: var(--accent-primary);
+  font-size: var(--font-lg);
+  min-width: 2ch;
+  text-align: center;
+}
+.hud-timer.hidden { display: none; }
+.hud-timer.hud-timer-urgent {
+  border-color: #e53935;
+  animation: timerUrgentPulse 0.5s step-start infinite;
+}
+@keyframes timerUrgentPulse {
+  0%, 50%  { opacity: 1; }
+  51%,100% { opacity: 0.6; }
+}
+
+/* ══ Team scores HUD ══════════════════════════════════════════════ */
+.hud-team-scores {
+  background: rgba(8,8,9,0.82);
+  backdrop-filter: blur(10px);
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-red);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--font-sm);
+}
+.hud-team-scores.hidden { display: none; }
+.hud-team strong { font-size: var(--font-md); font-weight: 700; }
+.hud-team-vs { color: var(--text-muted); font-size: var(--font-xs); }
+
+/* ══ Streak badge in round results ═══════════════════════════════ */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 2px 7px;
+  background: rgba(255,165,0,0.15);
+  color: #ffa726;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid rgba(255,165,0,0.25);
+  font-family: var(--font-family);
+  letter-spacing: 0.5px;
+}
+
+/* ══ Team header in in-game leaderboard ══════════════════════════ */
+.game-lb-team-header {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.04);
+  list-style: none;
+}
+.game-lb-team-member {
+  padding-left: 16px !important;
 }
 

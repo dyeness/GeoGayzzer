@@ -1,6 +1,11 @@
 /**
  * Game Room Management
  * Handles multiplayer rooms, player tracking, and round synchronization.
+ *
+ * Features:
+ *  - Team mode (2 teams, steal only across teams, balanced by join order)
+ *  - Round timer (started after first player guesses, host-configurable)
+ *  - Streak bonus (+200/+500/+1000 for 3/5/7 consecutive accurate rounds < 500 km)
  */
 
 const crypto = require('crypto');
@@ -9,6 +14,9 @@ const crypto = require('crypto');
 function generateRoomCode() {
   return crypto.randomBytes(3).toString('hex').toUpperCase();
 }
+
+const TEAM_NAMES  = ['🔴 Красные', '🔵 Синие'];
+const TEAM_COLORS = ['#e53935', '#1e88e5'];
 
 class GameRoom {
   constructor(code, hostId, hostNickname, hostColor) {
@@ -20,9 +28,20 @@ class GameRoom {
     this.totalRounds = 5;
     this.status = 'waiting'; // waiting | playing | finished
     this.roundGuesses = new Map();
-    this.readySet = new Set();  // players who clicked "Ready" between rounds
+    this.readySet = new Set();
     this.roundStartTime = null;
-    this.roundTimeLimit = 120_000;
+
+    /* ── Host-configurable settings ── */
+    this.teamMode            = false; // 2-team battle
+    this.timeLimitSecs       = 0;     // 0 = off; seconds after first guess
+    this.streakBonusEnabled  = true;  // bonus for N consecutive accurate rounds
+
+    /* ── Runtime state ── */
+    this.teams         = new Map(); // socketId → 0 | 1
+    this.teamScores    = [0, 0];
+    this.roundTimer    = null;      // setTimeout handle
+    this.roundFinalized = false;    // prevents double-finalize
+
     this.addPlayer(hostId, hostNickname, hostColor);
   }
 
@@ -35,6 +54,7 @@ class GameRoom {
       scores: [],
       totalScore: 0,
       guesses: [],
+      streak: 0,
     });
   }
 
@@ -42,33 +62,42 @@ class GameRoom {
     this.players.delete(socketId);
     this.roundGuesses.delete(socketId);
     this.readySet.delete(socketId);
+    this.teams.delete(socketId);
   }
 
   getPlayerList() {
     return Array.from(this.players.entries()).map(([id, p]) => ({
       id,
       nickname: p.nickname,
-      color: p.color,
+      color:    p.color,
       totalScore: p.totalScore,
-      isHost: id === this.hostId,
-      isReady: this.readySet.has(id),
+      isHost:   id === this.hostId,
+      isReady:  this.readySet.has(id),
+      team:     this.teamMode ? (this.teams.get(id) ?? null) : null,
+      streak:   p.streak,
     }));
   }
 
   /* ───── Ready system ───── */
 
-  /** Mark a player ready. Returns true when ALL players are ready. */
   markReady(socketId) {
     this.readySet.add(socketId);
     return this.readySet.size >= this.players.size;
   }
 
-  clearReady() {
-    this.readySet.clear();
-  }
+  clearReady() { this.readySet.clear(); }
+  getReadyCount() { return this.readySet.size; }
 
-  getReadyCount() {
-    return this.readySet.size;
+  /* ───── Team assignment (balanced by join order) ───── */
+
+  _assignTeams() {
+    this.teams.clear();
+    this.teamScores = [0, 0];
+    let i = 0;
+    for (const socketId of this.players.keys()) {
+      this.teams.set(socketId, i % 2);
+      i++;
+    }
   }
 
   /* ───── Game flow ───── */
@@ -78,11 +107,17 @@ class GameRoom {
     this.currentRound = 0;
     this.status = 'playing';
     this.readySet.clear();
+    this.roundFinalized = false;
+
     for (const p of this.players.values()) {
-      p.scores = [];
+      p.scores     = [];
       p.totalScore = 0;
-      p.guesses = [];
+      p.guesses    = [];
+      p.streak     = 0;
     }
+
+    if (this.teamMode) this._assignTeams();
+
     return this.getCurrentLocation();
   }
 
@@ -92,7 +127,7 @@ class GameRoom {
 
   submitGuess(socketId, guess) {
     if (this.status !== 'playing') return false;
-    if (this.roundGuesses.has(socketId)) return false; // already guessed
+    if (this.roundGuesses.has(socketId)) return false;
     this.roundGuesses.set(socketId, guess);
     return true;
   }
@@ -101,58 +136,82 @@ class GameRoom {
     return this.roundGuesses.size >= this.players.size;
   }
 
-  /** Finalize the current round — store scores and return results.
-   *  Applies "steal" mechanic: if two guesses are within STEAL_RADIUS km,
-   *  the closer player takes STEAL_FRACTION of the farther player's score.
+  /**
+   * Finalize the current round.
+   * Returns sorted results array (by this-round score desc).
    */
   finalizeRound(scoringFn) {
-    const location  = this.getCurrentLocation();
-    const STEAL_RADIUS   = 100;  // km — trigger distance between guesses
-    const STEAL_FRACTION = 0.20; // fraction of loser's score taken
+    this.roundFinalized = true;
+    if (this.roundTimer) { clearTimeout(this.roundTimer); this.roundTimer = null; }
 
-    // ── Step 1: base scores ──
+    const location       = this.getCurrentLocation();
+    const STEAL_RADIUS   = 100;   // km
+    const STEAL_FRACTION = 0.20;
+    const STREAK_KM      = 500;   // accurate = within 500 km
+
+    /* ── Step 1: base scores ── */
     const entries = [];
     for (const [socketId, player] of this.players) {
       const guess = this.roundGuesses.get(socketId);
       let distance = null;
-      let score = 0;
-
+      let score    = 0;
       if (guess) {
         distance = scoringFn.haversine(location.lat, location.lng, guess.lat, guess.lng);
         score    = scoringFn.calculateScore(distance);
       }
-
-      entries.push({ socketId, player, guess, distance, baseScore: score, score, stolen: 0, lostToSteal: 0 });
+      entries.push({ socketId, player, guess, distance, score, stolen: 0, lostToSteal: 0, streakBonus: 0 });
     }
 
-    // ── Step 2: steal — all pairs within radius ──
+    /* ── Step 2: steal ── */
     const guessers = entries.filter(e => e.guess && e.score > 0);
     for (let i = 0; i < guessers.length; i++) {
       for (let j = i + 1; j < guessers.length; j++) {
         const a = guessers[i];
         const b = guessers[j];
-        const guessDist = scoringFn.haversine(
-          a.guess.lat, a.guess.lng, b.guess.lat, b.guess.lng
-        );
-        if (guessDist <= STEAL_RADIUS) {
+
+        // In team mode: steal only allowed across DIFFERENT teams
+        if (this.teamMode) {
+          const ta = this.teams.get(a.socketId) ?? -1;
+          const tb = this.teams.get(b.socketId) ?? -1;
+          if (ta === tb) continue;
+        }
+
+        const dist = scoringFn.haversine(a.guess.lat, a.guess.lng, b.guess.lat, b.guess.lng);
+        if (dist <= STEAL_RADIUS) {
           const [winner, loser] = a.distance <= b.distance ? [a, b] : [b, a];
           const amount = Math.floor(loser.score * STEAL_FRACTION);
           if (amount > 0) {
-            winner.score  += amount;
-            winner.stolen += amount;
-            loser.score    = Math.max(0, loser.score - amount);
-            loser.lostToSteal += amount;
+            winner.score       += amount;
+            winner.stolen      += amount;
+            loser.score         = Math.max(0, loser.score - amount);
+            loser.lostToSteal  += amount;
           }
         }
       }
     }
 
-    // ── Step 3: commit to player state ──
+    /* ── Step 3: streak bonus ── */
+    if (this.streakBonusEnabled) {
+      for (const e of entries) {
+        const accurate = e.distance !== null && e.distance < STREAK_KM;
+        e.player.streak = accurate ? (e.player.streak || 0) + 1 : 0;
+        const s = e.player.streak;
+        const bonus = s >= 7 ? 1000 : s >= 5 ? 500 : s >= 3 ? 200 : 0;
+        if (bonus > 0) { e.score += bonus; e.streakBonus = bonus; }
+      }
+    }
+
+    /* ── Step 4: commit to state ── */
     const results = [];
-    for (const { socketId, player, guess, distance, score, stolen, lostToSteal } of entries) {
+    for (const { socketId, player, guess, distance, score, stolen, lostToSteal, streakBonus } of entries) {
       player.scores.push(score);
       player.totalScore += score;
       player.guesses.push(guess || null);
+
+      if (this.teamMode) {
+        const t = this.teams.get(socketId) ?? 0;
+        this.teamScores[t] = (this.teamScores[t] || 0) + score;
+      }
 
       results.push({
         socketId,
@@ -163,6 +222,9 @@ class GameRoom {
         score,
         stolen,
         lostToSteal,
+        streakBonus,
+        streak:     player.streak,
+        team:       this.teamMode ? (this.teams.get(socketId) ?? null) : null,
         totalScore: player.totalScore,
       });
     }
@@ -175,7 +237,8 @@ class GameRoom {
   nextRound() {
     this.roundGuesses.clear();
     this.readySet.clear();
-    this.currentRound += 1;
+    this.roundFinalized = false;
+    this.currentRound  += 1;
     if (this.currentRound >= this.totalRounds) {
       this.status = 'finished';
       return null;
@@ -184,15 +247,16 @@ class GameRoom {
     return this.getCurrentLocation();
   }
 
-  /** Get final leaderboard */
+  /** Final leaderboard — players sorted by totalScore */
   getLeaderboard() {
     return Array.from(this.players.entries())
       .map(([id, p]) => ({
         id,
-        nickname: p.nickname,
-        color: p.color,
+        nickname:   p.nickname,
+        color:      p.color,
         totalScore: p.totalScore,
-        scores: p.scores,
+        scores:     p.scores,
+        team:       this.teamMode ? (this.teams.get(id) ?? null) : null,
       }))
       .sort((a, b) => b.totalScore - a.totalScore);
   }
@@ -234,4 +298,5 @@ function getAllRooms() {
   }));
 }
 
-module.exports = { createRoom, getRoom, deleteRoom, getRoomByPlayer, getAllRooms, GameRoom };
+module.exports = { createRoom, getRoom, deleteRoom, getRoomByPlayer, getAllRooms, GameRoom, TEAM_NAMES, TEAM_COLORS };
+

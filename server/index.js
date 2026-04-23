@@ -21,7 +21,7 @@ try {
   process.exit(1);
 }
 
-const { createRoom, getRoom, deleteRoom, getRoomByPlayer, getAllRooms } = require('./game');
+const { createRoom, getRoom, deleteRoom, getRoomByPlayer, getAllRooms, TEAM_NAMES } = require('./game');
 const profiles = require('./profiles');
 
 /* ───── Scoring helpers (mirrored on server for multiplayer validation) ───── */
@@ -121,11 +121,33 @@ function saveCache() {
 }
 
 function addToCache(entry) {
-  // Avoid duplicates
   if (panoramaCache.some(e => e.id === entry.id)) return;
   panoramaCache.push(entry);
-  // Save every 10 new entries to avoid excessive writes
   if (panoramaCache.length % 10 === 0) saveCache();
+}
+
+/** Reverse-geocode lat/lng via Nominatim. Returns { country, city } or nulls. */
+async function reverseGeocode(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat.toFixed(5)}&lon=${lng.toFixed(5)}&format=json&zoom=10&accept-language=ru`;
+    const data = await new Promise((resolve, reject) => {
+      const req = https.get(url, { headers: { 'User-Agent': 'GeoGAYZZER/1.0 (educational)' } }, (res) => {
+        let body = '';
+        res.on('data', c => { body += c; });
+        res.on('end', () => { try { resolve(JSON.parse(body)); } catch { reject(new Error('parse')); } });
+      });
+      req.on('error', reject);
+      req.setTimeout(5000, () => { req.destroy(); reject(new Error('timeout')); });
+      req.end();
+    });
+    const addr = data?.address ?? {};
+    return {
+      country: addr.country ?? null,
+      city:    addr.city ?? addr.town ?? addr.municipality ?? addr.county ?? addr.village ?? null,
+    };
+  } catch {
+    return { country: null, city: null };
+  }
 }
 
 /** Pick N random entries from cache that are geographically spread.
@@ -211,7 +233,7 @@ function pickFromCache(count, excludeSet = new Set()) {
     }
   }
 
-  return picked.slice(0, count).map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id }));
+  return picked.slice(0, count).map(e => ({ lat: e.lat, lng: e.lng, imageId: e.id, country: e.country ?? null, city: e.city ?? null }));
 }
 
 loadCache();
@@ -398,7 +420,8 @@ async function findMapillaryImageOnServer(lat, lng) {
       // Skip panoramas already used this session
       if (sessionUsed.has(img.id)) { await sleep(50); continue; }
       console.log('[findMapillaryImage] found after ' + (attempt + 1) + ' attempt(s): ' + img.id);
-      const result = { id: img.id, lat: coords[1], lng: coords[0] };
+      const geo = await reverseGeocode(coords[1], coords[0]);
+      const result = { id: img.id, lat: coords[1], lng: coords[0], country: geo.country, city: geo.city };
       addToCache(result);
       return result;
     } catch (err) {
@@ -452,7 +475,7 @@ async function resolveLocationsForGame(count, onProgress, excludeIds = []) {
     console.log('[resolveLocations] searching ' + (found.length + 1) + '/' + count + ' (attempt ' + totalAttempts + ')...');
     const img = await findMapillaryImageOnServer(seed.lat, seed.lng);
     if (img) {
-      const loc = { lat: img.lat, lng: img.lng, imageId: img.id };
+      const loc = { lat: img.lat, lng: img.lng, imageId: img.id, country: img.country ?? null, city: img.city ?? null };
       found.push(loc);
       if (onProgress) onProgress(found.length, loc);
       console.log('[resolveLocations] [' + found.length + '/' + count + '] id=' + img.id);
@@ -683,7 +706,7 @@ function finalizeGameProfiles(room) {
   return profiles.updateAfterGame(gameProfileData);
 }
 
-/** Build enriched game-over payload: leaderboard with current ELO + avgElo. */
+/** Build enriched game-over payload: leaderboard with current ELO + avgElo + team data. */
 function buildGameOverPayload(room, eloChanges) {
   const lb = room.getLeaderboard().map(p => ({
     ...p,
@@ -692,7 +715,48 @@ function buildGameOverPayload(room, eloChanges) {
   const avgElo = lb.length > 0
     ? Math.round(lb.reduce((s, p) => s + p.elo, 0) / lb.length)
     : 0;
-  return { leaderboard: lb, eloChanges, avgElo };
+  return {
+    leaderboard: lb,
+    eloChanges,
+    avgElo,
+    teamMode:   room.teamMode,
+    teamScores: room.teamMode ? [...room.teamScores] : null,
+  };
+}
+
+/**
+ * Finalize a round and emit results. Guards against double-call.
+ * Also broadcasts round-timer-stop so clients can clear countdown.
+ */
+function finalizeAndEmitRound(room) {
+  if (room.roundFinalized) return;
+  const results = room.finalizeRound(scoring);
+  const enrichedResults = results.map(r => ({
+    ...r,
+    elo: profiles.getProfile(r.nickname)?.elo ?? 1000,
+  }));
+  const loc = room.getCurrentLocation();
+  io.to(room.code).emit('round-results', {
+    results: enrichedResults,
+    location: loc,
+    round:       room.currentRound + 1,
+    isLastRound: room.currentRound + 1 >= room.totalRounds,
+    teamMode:    room.teamMode,
+    teamScores:  room.teamMode ? [...room.teamScores] : null,
+  });
+  io.to(room.code).emit('round-timer-stop');
+
+  const roundProfileData = results.map((r, idx) => ({
+    nickname:       r.nickname,
+    score:          r.score,
+    distance:       r.distance,
+    stolen:         r.stolen || 0,
+    lostToSteal:    r.lostToSteal || 0,
+    roundPlacement: idx + 1,
+    playerCount:    results.length,
+    roundNumber:    room.currentRound,
+  }));
+  profiles.updateAfterRound(roundProfileData);
 }
 
 /** Enrich player list with profile data (level, prestige, elo) for lobby display. */
@@ -798,6 +862,12 @@ io.on('connection', (socket) => {
       if (room.hostId !== socket.id) return cb?.({ success: false, error: 'Только хост может начать' });
       if (room.players.size < 1) return cb?.({ success: false, error: 'Недостаточно игроков' });
 
+      // Apply host-configured settings before starting
+      room.teamMode          = !!data?.teamMode;
+      room.totalRounds       = Math.min(20, Math.max(1, parseInt(data?.totalRounds)  || 5));
+      room.timeLimitSecs     = Math.min(120, Math.max(0, parseInt(data?.timeLimitSecs) || 0));
+      room.streakBonusEnabled = data?.streakBonus !== false;
+
       cb?.({ success: true });  // ack immediately so host UI unblocks
 
       // Tell all lobby players we are searching for panoramas
@@ -823,9 +893,11 @@ io.on('connection', (socket) => {
       io.to(room.code).emit('round-start', {
         round: room.currentRound + 1,
         totalRounds: room.totalRounds,
-        location: { lat: firstLocation.lat, lng: firstLocation.lng },
+        location: { lat: firstLocation.lat, lng: firstLocation.lng, country: firstLocation.country ?? null, city: firstLocation.city ?? null },
         imageId: locations[0].imageId ?? null,
         players: room.getPlayerList(),
+        settings:   { teamMode: room.teamMode, timeLimitSecs: room.timeLimitSecs, streakBonus: room.streakBonusEnabled },
+        teamScores: room.teamMode ? [...room.teamScores] : null,
       });
       console.log(`Game started in room ${room.code} [imageId=${locations[0].imageId ?? 'none'}]`);
     } catch (err) {
@@ -855,34 +927,17 @@ io.on('connection', (socket) => {
       lng,
     });
 
-    // If all guesses are in, finalize the round
-    if (room.allGuessesIn()) {
-      const results = room.finalizeRound(scoring);
-      // Enrich results with current ELO for client display
-      const enrichedResults = results.map(r => ({
-        ...r,
-        elo: profiles.getProfile(r.nickname)?.elo ?? 1000,
-      }));
-      const loc = room.getCurrentLocation();
-      io.to(room.code).emit('round-results', {
-        results: enrichedResults,
-        location: loc,
-        round: room.currentRound + 1,
-        isLastRound: room.currentRound + 1 >= room.totalRounds,
-      });
+    // Start countdown after first guess if timer is enabled
+    if (room.roundGuesses.size === 1 && room.timeLimitSecs > 0 && !room.roundFinalized) {
+      io.to(room.code).emit('round-timer-start', { secs: room.timeLimitSecs });
+      room.roundTimer = setTimeout(() => {
+        finalizeAndEmitRound(room);
+      }, room.timeLimitSecs * 1000);
+    }
 
-      // Update player profiles (XP, records, achievements)
-      const roundProfileData = results.map((r, idx) => ({
-        nickname:       r.nickname,
-        score:          r.score,
-        distance:       r.distance,
-        stolen:         r.stolen || 0,
-        lostToSteal:    r.lostToSteal || 0,
-        roundPlacement: idx + 1,
-        playerCount:    results.length,
-        roundNumber:    room.currentRound,
-      }));
-      profiles.updateAfterRound(roundProfileData);
+    // If all guesses are in, finalize immediately
+    if (room.allGuessesIn()) {
+      finalizeAndEmitRound(room);
     }
   });
 
@@ -945,9 +1000,11 @@ io.on('connection', (socket) => {
         io.to(room.code).emit('round-start', {
           round: room.currentRound + 1,
           totalRounds: room.totalRounds,
-          location: { lat: nextLoc.lat, lng: nextLoc.lng },
+          location: { lat: nextLoc.lat, lng: nextLoc.lng, country: nextLoc.country ?? null, city: nextLoc.city ?? null },
           imageId,
           players: room.getPlayerList(),
+          settings:   { teamMode: room.teamMode, timeLimitSecs: room.timeLimitSecs, streakBonus: room.streakBonusEnabled },
+          teamScores: room.teamMode ? [...room.teamScores] : null,
         });
       }
     }
@@ -971,8 +1028,10 @@ io.on('connection', (socket) => {
     io.to(room.code).emit('round-start', {
       round: room.currentRound + 1,
       totalRounds: room.totalRounds,
-      location: { lat: nextLoc.lat, lng: nextLoc.lng },
+      location: { lat: nextLoc.lat, lng: nextLoc.lng, country: nextLoc.country ?? null, city: nextLoc.city ?? null },
       imageId,
+      settings:   { teamMode: room.teamMode, timeLimitSecs: room.timeLimitSecs, streakBonus: room.streakBonusEnabled },
+      teamScores: room.teamMode ? [...room.teamScores] : null,
     });
   });
 

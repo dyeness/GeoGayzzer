@@ -69,6 +69,44 @@
           <button class="color-swatch" data-color="#ffcc80" style="background:#ffcc80"></button>
         </div>
       </div>
+      <!-- Host Game Settings (visible to host only) -->
+      <div id="lobby-settings" class="lobby-settings hidden">
+        <h3 class="settings-title">⚙️ Настройки игры</h3>
+        <div class="setting-row">
+          <label class="setting-label">Режим игры</label>
+          <select id="setting-mode" class="setting-select">
+            <option value="standard">Стандартный</option>
+            <option value="team">👥 Командный бой (2 команды)</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">Количество раундов</label>
+          <select id="setting-rounds" class="setting-select">
+            <option value="5" selected>5 раундов</option>
+            <option value="10">10 раундов</option>
+            <option value="15">15 раундов</option>
+            <option value="20">20 раундов</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">Таймер после первого угадывания</label>
+          <select id="setting-timer" class="setting-select">
+            <option value="0" selected>Отключён</option>
+            <option value="30">30 секунд</option>
+            <option value="60">60 секунд</option>
+            <option value="90">90 секунд</option>
+            <option value="120">120 секунд</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">Бонус за стрик (&lt; 500 км подряд)</label>
+          <select id="setting-streak" class="setting-select">
+            <option value="1" selected>Включён (+200/+500/+1000)</option>
+            <option value="0">Отключён</option>
+          </select>
+        </div>
+      </div>
+
       <div class="lobby-actions">
         <button id="btn-start-game" class="btn btn-primary btn-lg" style="display:none;">Начать игру</button>
         <p id="lobby-wait-msg" class="text-muted">Ожидание хоста...</p>

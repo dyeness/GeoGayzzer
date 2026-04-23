@@ -72,10 +72,10 @@ const Network = (() => {
     });
   }
 
-  function startGame(excludeIds = []) {
+  function startGame(excludeIds = [], settings = {}) {
     return new Promise((resolve, reject) => {
       if (!socket) return reject(new Error('Not connected'));
-      socket.emit('start-game', { excludeIds }, (response) => {
+      socket.emit('start-game', { excludeIds, ...settings }, (response) => {
         if (response.success) resolve(response);
         else reject(new Error(response.error || 'Failed'));
       });
@@ -154,6 +154,7 @@ const Network = (() => {
     onGameError: null,
     onReadyUpdate: null,
     onChatMessage: null,
+    onRoundTimerStart: null,
   };
 
   function on(event, cb) {
@@ -201,6 +202,14 @@ const Network = (() => {
 
     socket.on('chat-message', (data) => {
       callbacks.onChatMessage?.(data);
+    });
+
+    socket.on('round-timer-start', (data) => {
+      callbacks.onRoundTimerStart?.(data);
+    });
+
+    socket.on('round-timer-stop', () => {
+      callbacks.onRoundTimerStart?.({ secs: 0 });
     });
 
     socket.on('disconnect', () => {

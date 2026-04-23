@@ -105,7 +105,13 @@
       try {
         const excludeRaw = document.getElementById('exclude-pano-input')?.value || '';
         const excludeIds = excludeRaw.split(',').map(s => s.trim()).filter(Boolean);
-        await Network.startGame(excludeIds);
+        const settings = {
+          teamMode:      document.getElementById('setting-mode')?.value === 'team',
+          totalRounds:   parseInt(document.getElementById('setting-rounds')?.value  || '5'),
+          timeLimitSecs: parseInt(document.getElementById('setting-timer')?.value   || '0'),
+          streakBonus:   document.getElementById('setting-streak')?.value !== '0',
+        };
+        await Network.startGame(excludeIds, settings);
       } catch (err) {
         alert('Ошибка: ' + err.message);
         if (btn) { btn.disabled = false; btn.textContent = 'Начать игру'; }
