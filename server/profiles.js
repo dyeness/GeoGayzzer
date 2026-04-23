@@ -80,10 +80,21 @@ function getLevelInfo(totalXp) {
 
 /**
  * Prestige: every 55 levels gives +1 prestige.
- * Level 55 → prestige 1, level 110 → prestige 2, etc.
+ * After prestige, level resets to 1 (totalXp is zeroed in the profile).
  */
 function getPrestige(level) {
   return Math.floor(level / 55);
+}
+
+/**
+ * After adding XP, check if level reached 55 — if so, prestige up and reset totalXp.
+ */
+function checkAndApplyPrestige(prof) {
+  const { level } = getLevelInfo(prof.totalXp);
+  if (level >= 55) {
+    prof.prestige  = (prof.prestige || 0) + 1;
+    prof.totalXp   = 0;
+  }
 }
 
 /** XP earned at the end of a round */
@@ -199,6 +210,7 @@ function initProfile(nickname) {
     profiles[key] = {
       nickname:    nickname.trim(),
       totalXp:     0,
+      prestige:    0,
       gamesPlayed: 0,
       roundsPlayed: 0,
       banner:      null,
@@ -269,6 +281,7 @@ function updateAfterRound(roundResults) {
 
     // XP (new expanded formula)
     prof.totalXp      += calcRoundXp(r.score, r.distance, r.stolen || 0, r.roundPlacement, r.playerCount, r.isSolo === true);
+    checkAndApplyPrestige(prof);
     prof.roundsPlayed += 1;
 
     // Records
@@ -367,6 +380,7 @@ function updateAfterGame(gameResults) {
 
     // XP (expanded formula with bonus params)
     prof.totalXp     += calcMatchXp(r.matchPlacement, r.playerCount, allRounds90, bigOpponents, r.mode === 'solo');
+    checkAndApplyPrestige(prof);
     prof.gamesPlayed += 1;
 
     // ELO (multiplayer only, floor at 100)
@@ -454,7 +468,7 @@ function getProfile(nickname) {
   const prof = profiles[key];
   if (!prof) return null;
   const { level, currentXp, xpNeeded } = getLevelInfo(prof.totalXp);
-  const prestige = getPrestige(level);
+  const prestige = prof.prestige ?? 0;
   return { ...prof, level, currentXp, xpNeeded, prestige };
 }
 
@@ -472,7 +486,7 @@ function setProfileBanner(nickname, bannerKey) {
 function getAllProfiles() {
   return Object.values(profiles).map(p => {
     const { level } = getLevelInfo(p.totalXp);
-    const prestige  = getPrestige(level);
+    const prestige  = p.prestige ?? 0;
     return { nickname: p.nickname, level, totalXp: p.totalXp, gamesPlayed: p.gamesPlayed, prestige, elo: p.elo ?? 1000, banner: p.banner ?? null };
   }).sort((a, b) => b.totalXp - a.totalXp);
 }
