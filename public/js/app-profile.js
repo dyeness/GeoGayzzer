@@ -69,17 +69,17 @@
 
   /* ── Banner IDs and their GIF URLs ────────────────────────────────────── */
   const BANNER_DEFS = [
-    { key: 'city_night',      label: 'Ночной город',    url: 'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHdocW1zMGp6anV5ODZuYmNnaGZhN3VuaXYzMjdlbHdtcXNjZHFwbyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jDuKZ5l0ZvPIM3PZz6/giphy.gif' },
-    { key: 'rain_window',     label: 'Дождь',            url: 'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeHRpNzFmaTJlbG96bnl1eTdjcnZscDVxOTdkbmE0OXBpc2M1cThwZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/u5IJdDXKFfGWi01ydS/giphy.gif' },
-    { key: 'forest_fog',      label: 'Туманный лес',    url: 'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHZoMG9ndXY2bGQ4bnFtbTlnNmZqajdnZGpsMW9obXhuMnUzeXllcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/C4wk6m8Q04DeDRckhj/giphy.gif' },
-    { key: 'ocean_waves',     label: 'Океан',           url: 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3pqeWlsOGNzbHJpeXI5cGJndXRtZ2MxZTZxcHJ5ZmVqcDVxd3FkbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hQIrijIRX3kKvaYaua/giphy.gif' },
-    { key: 'neon_city',       label: 'Неон',            url: 'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMTkyNzdwZWUxMHBjZTZvd25xemhsYm9zdGEwd2k3MWYxb3pqdGljOSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lwo2cfTZq6TtsxeeW8/giphy.gif' },
-    { key: 'space_drift',     label: 'Космос',          url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzMzOGhpY3h6ZmN4bDUxMXhibnNxd241cHFzdm04a3I4bnR3bGxlOSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/5YOUEDaB3CGNbnsG2i/giphy.gif' },
-    { key: 'aurora',          label: 'Северное сияние', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzMzOGhpY3h6ZmN4bDUxMXhibnNxd241cHFzdm04a3I4bnR3bGxlOSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/NrXyKCIbSebv5Sgxpj/giphy.gif' },
-    { key: 'desert_dunes',    label: 'Пустыня',         url: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/sG0LZNRWqTaijf2EEj/giphy.gif' },
-    { key: 'mountain_snow',   label: 'Горы в снегу',   url: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/WQ3Uz2IGuyC4FtrZIn/giphy.gif' },
-    { key: 'fireplace',       label: 'Камин',           url: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/0s0HrYMIlCVqOspDRd/giphy.gif' },
-    { key: 'cherry_blossom',  label: 'Сакура',          url: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/JMlIy2LIUY6j8vG4FW/giphy.gif' },
+    { key: 'city_night',      label: 'Ночной город',    url: '/api/gif/city_night' },
+    { key: 'rain_window',     label: 'Дождь',            url: '/api/gif/rain_window' },
+    { key: 'forest_fog',      label: 'Туманный лес',    url: '/api/gif/forest_fog' },
+    { key: 'ocean_waves',     label: 'Океан',           url: '/api/gif/ocean_waves' },
+    { key: 'neon_city',       label: 'Неон',            url: '/api/gif/neon_city' },
+    { key: 'space_drift',     label: 'Космос',          url: '/api/gif/space_drift' },
+    { key: 'aurora',          label: 'Северное сияние', url: '/api/gif/aurora' },
+    { key: 'desert_dunes',    label: 'Пустыня',         url: '/api/gif/desert_dunes' },
+    { key: 'mountain_snow',   label: 'Горы в снегу',   url: '/api/gif/mountain_snow' },
+    { key: 'fireplace',       label: 'Камин',           url: '/api/gif/fireplace' },
+    { key: 'cherry_blossom',  label: 'Сакура',          url: '/api/gif/cherry_blossom' },
   ];
 
   /** Return the GIF URL for a given banner key (or null) */

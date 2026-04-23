@@ -5,17 +5,17 @@
 const UI = (() => {
   /* ── Banner GIF map (key → URL) ── */
   const BANNER_URL_MAP = {
-    city_night:     'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHdocW1zMGp6anV5ODZuYmNnaGZhN3VuaXYzMjdlbHdtcXNjZHFwbyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jDuKZ5l0ZvPIM3PZz6/giphy.gif',
-    rain_window:    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeHRpNzFmaTJlbG96bnl1eTdjcnZscDVxOTdkbmE0OXBpc2M1cThwZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/u5IJdDXKFfGWi01ydS/giphy.gif',
-    forest_fog:     'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHZoMG9ndXY2bGQ4bnFtbTlnNmZqajdnZGpsMW9obXhuMnUzeXllcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/C4wk6m8Q04DeDRckhj/giphy.gif',
-    ocean_waves:    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3pqeWlsOGNzbHJpeXI5cGJndXRtZ2MxZTZxcHJ5ZmVqcDVxd3FkbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hQIrijIRX3kKvaYaua/giphy.gif',
-    neon_city:      'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMTkyNzdwZWUxMHBjZTZvd25xemhsYm9zdGEwd2k3MWYxb3pqdGljOSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lwo2cfTZq6TtsxeeW8/giphy.gif',
-    space_drift:    'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzMzOGhpY3h6ZmN4bDUxMXhibnNxd241cHFzdm04a3I4bnR3bGxlOSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/5YOUEDaB3CGNbnsG2i/giphy.gif',
-    aurora:         'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzMzOGhpY3h6ZmN4bDUxMXhibnNxd241cHFzdm04a3I4bnR3bGxlOSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/NrXyKCIbSebv5Sgxpj/giphy.gif',
-    desert_dunes:   'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/sG0LZNRWqTaijf2EEj/giphy.gif',
-    mountain_snow:  'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/WQ3Uz2IGuyC4FtrZIn/giphy.gif',
-    fireplace:      'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/0s0HrYMIlCVqOspDRd/giphy.gif',
-    cherry_blossom: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/JMlIy2LIUY6j8vG4FW/giphy.gif',
+    city_night:     '/api/gif/city_night',
+    rain_window:    '/api/gif/rain_window',
+    forest_fog:     '/api/gif/forest_fog',
+    ocean_waves:    '/api/gif/ocean_waves',
+    neon_city:      '/api/gif/neon_city',
+    space_drift:    '/api/gif/space_drift',
+    aurora:         '/api/gif/aurora',
+    desert_dunes:   '/api/gif/desert_dunes',
+    mountain_snow:  '/api/gif/mountain_snow',
+    fireplace:      '/api/gif/fireplace',
+    cherry_blossom: '/api/gif/cherry_blossom',
   };
 
   function resolveBannerUrl(key) {
@@ -151,7 +151,15 @@ const UI = (() => {
     const excludeRow = document.getElementById('exclude-pano-row');
     if (excludeRow) excludeRow.style.display = isHost ? 'block' : 'none';
     const settingsEl = document.getElementById('lobby-settings');
-    if (settingsEl) settingsEl.classList.toggle('hidden', !isHost);
+    if (settingsEl) {
+      settingsEl.classList.remove('hidden');
+      // For non-hosts: disable all inputs
+      settingsEl.querySelectorAll('select, input').forEach(el => {
+        el.disabled = !isHost;
+      });
+      const toggleBtn = document.getElementById('btn-settings-toggle');
+      if (toggleBtn) toggleBtn.style.display = isHost ? '' : 'none';
+    }
   }
 
   /* ── Result Screen (fullscreen) ── */
@@ -502,6 +510,8 @@ const UI = (() => {
 
   /* ── In-game leaderboard with color ── */
   function showInGameLeaderboard(players) {
+    const sidebar = document.getElementById('game-sidebar');
+    if (sidebar) sidebar.classList.remove('hidden');
     const panel = document.getElementById('game-leaderboard');
     if (panel) panel.classList.remove('hidden');
     if (players && players.length > 0) updateInGameLeaderboard(players);

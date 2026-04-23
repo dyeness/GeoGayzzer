@@ -228,15 +228,22 @@
 }
 
 /* In-game leaderboard panel — left side, below HUD */
-.game-leaderboard {
+/* ── In-game sidebar (leaderboard + chat toggle) ── */
+.game-sidebar {
   position: absolute;
   top: 60px;
   left: 16px;
   z-index: 30;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+.game-sidebar.hidden { display: none; }
+
+.game-leaderboard {
   background: rgba(8, 8, 9, 0.88);
   border: 1px solid var(--border-red);
-  border-radius: var(--radius-lg);
-  min-width: 200px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: var(--shadow-md);
   overflow: hidden;
   transition: opacity 200ms;
@@ -824,14 +831,15 @@
    ══════════════════════════════════════════════════════════ */
 .game-chat-toggle-btn {
   width: 100%;
-  background: rgba(204, 0, 0, 0.12);
-  border: none;
-  border-top: 1px solid var(--border-red);
+  background: rgba(8, 8, 9, 0.88);
+  border: 1px solid var(--border-red);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   color: var(--text-secondary);
   font-family: var(--font-family);
   font-size: var(--font-sm);
   font-weight: 600;
-  padding: 7px 12px;
+  padding: 7px 14px;
   cursor: pointer;
   text-align: left;
   letter-spacing: 0.5px;
@@ -839,8 +847,9 @@
   align-items: center;
   gap: 6px;
   transition: background 150ms, color 150ms;
-  position: relative;
+  box-shadow: var(--shadow-md);
 }
+.game-chat-toggle-btn.hidden { display: none; }
 .game-chat-toggle-btn:hover { background: rgba(204,0,0,0.22); color: #fff; }
 
 .game-chat-unread-dot {

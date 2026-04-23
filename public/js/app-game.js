@@ -195,6 +195,10 @@
       UI.updateHUD();
       UI.updateMultiplayerHUD(0, data.totalRounds);
 
+      // Restore timer if countdown was already running
+      if (data.timerSecsLeft > 0) UI.startRoundTimer(data.timerSecsLeft);
+      else UI.clearRoundTimer();
+
       if (data.imageId) {
         await Panorama.loadById(data.imageId, data.location.lat, data.location.lng);
         if (!data.alreadyGuessed) Panorama.lockInteraction(1500);
@@ -234,7 +238,7 @@
     });
   }
 
-  function _appendGameChatMsg({ nickname, text, system = false }) {
+  function _appendGameChatMsg({ nickname, text, color, system = false }) {
     const box = document.getElementById('game-chat-messages');
     if (!box) return;
     const el = document.createElement('div');
@@ -244,7 +248,7 @@
     } else {
       const nick = document.createElement('span');
       nick.className = 'chat-msg-nick';
-      nick.style.color = '#cc6666';
+      nick.style.color = color || '#cc6666';
       nick.textContent = nickname + ':';
       el.appendChild(nick);
       el.appendChild(document.createTextNode(' ' + text));

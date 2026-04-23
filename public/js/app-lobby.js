@@ -66,10 +66,30 @@
     // Live settings update from host
     Network.on('onRoomSettings', (data) => {
       _updateTeamSelector(!!data.teamMode);
+      // Update selects with host values (for non-hosts: read-only disabled display)
+      const isHost = GameState.get('isHost');
+      if (!isHost) {
+        if (data.teamMode !== undefined) {
+          const el = document.getElementById('setting-mode');
+          if (el) el.value = data.teamMode ? 'team' : 'standard';
+        }
+        if (data.totalRounds !== undefined) {
+          const el = document.getElementById('setting-rounds');
+          if (el) el.value = String(data.totalRounds);
+        }
+        if (data.timeLimitSecs !== undefined) {
+          const el = document.getElementById('setting-timer');
+          if (el) el.value = String(data.timeLimitSecs);
+        }
+        if (data.streakBonus !== undefined) {
+          const el = document.getElementById('setting-streak');
+          if (el) el.value = data.streakBonus ? '1' : '0';
+        }
+      }
     });
   }
 
-  function _appendLobbyChatMsg({ nickname, text, system = false }) {
+  function _appendLobbyChatMsg({ nickname, text, color, system = false }) {
     const box = document.getElementById('lobby-chat-messages');
     if (!box) return;
     const el = document.createElement('div');
@@ -79,7 +99,7 @@
     } else {
       const nick = document.createElement('span');
       nick.className = 'chat-msg-nick';
-      nick.style.color = '#cc6666';
+      nick.style.color = color || '#cc6666';
       nick.textContent = nickname + ':';
       el.appendChild(nick);
       el.appendChild(document.createTextNode(' ' + text));

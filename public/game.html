@@ -76,15 +76,17 @@
       </div>
     </div>
 
-    <!-- In-game leaderboard (multiplayer only) -->
-    <div id="game-leaderboard" class="game-leaderboard hidden">
-      <div class="game-lb-header">
-        <span>🏆 Лидерборд</span>
-        <span id="hud-guessed-badge" class="game-lb-guessed" style="display:none;">0/0 угадали</span>
-        <button id="btn-lb-toggle" class="game-lb-toggle" title="Свернуть">−</button>
+    <!-- In-game leaderboard + chat toggle (multiplayer only) -->
+    <div id="game-sidebar" class="game-sidebar hidden">
+      <div id="game-leaderboard" class="game-leaderboard">
+        <div class="game-lb-header">
+          <span>🏆 Лидерборд</span>
+          <span id="hud-guessed-badge" class="game-lb-guessed" style="display:none;">0/0 угадали</span>
+          <button id="btn-lb-toggle" class="game-lb-toggle" title="Свернуть">−</button>
+        </div>
+        <ol id="game-lb-list" class="game-lb-list"></ol>
       </div>
-      <ol id="game-lb-list" class="game-lb-list"></ol>
-      <!-- Chat toggle button always below leaderboard -->
+      <!-- Chat toggle button: always visible in multiplayer -->
       <button id="btn-game-chat-toggle" class="game-chat-toggle-btn">
         💬 Чат
         <span id="game-chat-unread" class="game-chat-unread-dot hidden"></span>

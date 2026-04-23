@@ -542,6 +542,46 @@ const ALLOWED_BANNERS = [
   'mountain_snow', 'fireplace', 'cherry_blossom',
 ];
 
+/* Stable Giphy CDN URLs for proxy */
+const BANNER_GIF_URLS = {
+  city_night:     'https://media.giphy.com/media/jDuKZ5l0ZvPIM3PZz6/giphy.gif',
+  rain_window:    'https://media.giphy.com/media/u5IJdDXKFfGWi01ydS/giphy.gif',
+  forest_fog:     'https://media.giphy.com/media/C4wk6m8Q04DeDRckhj/giphy.gif',
+  ocean_waves:    'https://media.giphy.com/media/hQIrijIRX3kKvaYaua/giphy.gif',
+  neon_city:      'https://media.giphy.com/media/lwo2cfTZq6TtsxeeW8/giphy.gif',
+  space_drift:    'https://media.giphy.com/media/5YOUEDaB3CGNbnsG2i/giphy.gif',
+  aurora:         'https://media.giphy.com/media/NrXyKCIbSebv5Sgxpj/giphy.gif',
+  desert_dunes:   'https://media.giphy.com/media/sG0LZNRWqTaijf2EEj/giphy.gif',
+  mountain_snow:  'https://media.giphy.com/media/WQ3Uz2IGuyC4FtrZIn/giphy.gif',
+  fireplace:      'https://media.giphy.com/media/0s0HrYMIlCVqOspDRd/giphy.gif',
+  cherry_blossom: 'https://media.giphy.com/media/JMlIy2LIUY6j8vG4FW/giphy.gif',
+};
+
+/* GIF proxy — fetches from Giphy CDN server-side, avoids hotlink blocks */
+function proxyGif(targetUrl, res) {
+  const req = https.get(targetUrl, {
+    headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://giphy.com/' },
+  }, (gifRes) => {
+    if (gifRes.statusCode === 301 || gifRes.statusCode === 302 || gifRes.statusCode === 307) {
+      const location = gifRes.headers.location;
+      gifRes.resume();
+      if (location) { proxyGif(location, res); } else { res.status(502).end(); }
+      return;
+    }
+    if (gifRes.statusCode !== 200) { res.status(gifRes.statusCode || 502).end(); return; }
+    res.setHeader('Content-Type', gifRes.headers['content-type'] || 'image/gif');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    gifRes.pipe(res);
+  });
+  req.on('error', () => res.status(502).end());
+}
+
+app.get('/api/gif/:key', (req, res) => {
+  const url = BANNER_GIF_URLS[req.params.key];
+  if (!url) return res.status(404).end();
+  proxyGif(url, res);
+});
+
 app.patch('/api/profile/:nickname/banner', (req, res) => {
   const token = req.headers['x-auth-token'] || req.body?.token;
   const acc = verifyToken(token);
@@ -790,6 +830,7 @@ function buildGameOverPayload(room, eloChanges) {
  */
 function finalizeAndEmitRound(room) {
   if (room.roundFinalized) return;
+  room.timerStartTime = null; // reset timer tracking
   const results = room.finalizeRound(scoring);
   const enrichedResults = results.map(r => ({
     ...r,
@@ -897,6 +938,12 @@ io.on('connection', (socket) => {
       const roundIdx = room.currentRound;
       const loc = room.getCurrentLocation();
       const imageId = room.resolvedImages?.[roundIdx]?.id ?? null;
+      // Calculate remaining timer seconds if countdown is active
+      let timerSecsLeft = 0;
+      if (room.timerStartTime && room.timeLimitSecs > 0 && !room.roundFinalized) {
+        const elapsed = (Date.now() - room.timerStartTime) / 1000;
+        timerSecsLeft = Math.max(0, Math.ceil(room.timeLimitSecs - elapsed));
+      }
       cb({
         success: true,
         code: room.code,
@@ -908,6 +955,7 @@ io.on('connection', (socket) => {
         location: { lat: loc.lat, lng: loc.lng },
         imageId,
         alreadyGuessed: room.roundGuesses.has(socket.id),
+        timerSecsLeft,
       });
       socket.to(room.code).emit('player-joined', { players: enrichedPlayerList(room) });
       console.log(`🔄 ${nickname} reconnected to room ${room.code}`);
@@ -922,7 +970,12 @@ io.on('connection', (socket) => {
     if (!room || room.hostId !== socket.id) return cb?.({ success: false, error: 'Нет прав' });
     if (room.status !== 'waiting') return cb?.({ success: false, error: 'Игра уже началась' });
     if (typeof data?.teamMode === 'boolean') room.teamMode = data.teamMode;
-    io.to(room.code).emit('room-settings', { teamMode: room.teamMode });
+    io.to(room.code).emit('room-settings', {
+      teamMode:       room.teamMode,
+      totalRounds:    room.totalRounds,
+      timeLimitSecs:  room.timeLimitSecs,
+      streakBonus:    room.streakBonusEnabled,
+    });
     io.to(room.code).emit('player-joined', { players: enrichedPlayerList(room) });
     cb?.({ success: true });
   });
@@ -1013,6 +1066,7 @@ io.on('connection', (socket) => {
 
     // Start countdown after first guess if timer is enabled
     if (room.roundGuesses.size === 1 && room.timeLimitSecs > 0 && !room.roundFinalized) {
+      room.timerStartTime = Date.now();
       io.to(room.code).emit('round-timer-start', { secs: room.timeLimitSecs });
       room.roundTimer = setTimeout(() => {
         finalizeAndEmitRound(room);
