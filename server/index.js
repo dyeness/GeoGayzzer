@@ -708,6 +708,50 @@ app.post('/api/history', (req, res) => {
   res.json({ ok: true });
 });
 
+// Solo game finish — award XP (halved) for solo mode
+app.post('/api/solo-finish', (req, res) => {
+  const token = req.headers['x-auth-token'] || req.body?.token;
+  const acc = verifyToken(token);
+  if (!acc) return res.status(401).json({ error: 'Не авторизован' });
+
+  const { totalScore, rounds } = req.body || {};
+  if (!Array.isArray(rounds) || rounds.length === 0)
+    return res.status(400).json({ error: 'rounds required' });
+
+  const nickname = acc.nickname;
+
+  // Award per-round XP (isSolo = true → halved)
+  const roundProfileData = rounds.map((r, i) => ({
+    nickname,
+    score:          r.score      ?? 0,
+    distance:       r.distance   ?? null,
+    stolen:         0,
+    lostToSteal:    0,
+    roundPlacement: 1,
+    playerCount:    1,
+    roundNumber:    i,
+    isSolo:         true,
+  }));
+  profiles.updateAfterRound(roundProfileData);
+
+  // Award match XP (isSolo = true → halved)
+  const gameProfileData = [{
+    nickname,
+    totalScore:     totalScore ?? 0,
+    matchPlacement: 1,
+    playerCount:    1,
+    rounds:         rounds.length,
+    teamMode:       false,
+    mode:           'solo',
+    allPlayers:     [{ nickname, totalScore: totalScore ?? 0, placement: 1 }],
+    roundsData:     [],
+  }];
+  const eloChanges = profiles.updateAfterGame(gameProfileData);
+
+  const prof = profiles.getProfile(nickname);
+  res.json({ ok: true, level: prof?.level ?? 1, totalXp: prof?.totalXp ?? 0, eloChanges });
+});
+
 // Proxy Mapillary Graph API — server-side, token never exposed to client
 app.get('/api/mapillary/images', (req, res) => {
   const token = apiConfig.MAPILLARY_ACCESS_TOKEN;

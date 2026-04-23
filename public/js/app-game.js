@@ -42,6 +42,18 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nickname, mode, totalScore, rounds }),
     }).catch(() => {});
+
+    // Solo XP — award halved XP via authenticated endpoint
+    if (mode === 'solo') {
+      const token = Player.getToken();
+      if (token) {
+        fetch('/api/solo-finish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+          body: JSON.stringify({ totalScore, rounds }),
+        }).catch(() => {});
+      }
+    }
   }
 
   /* ═══════════════════════════════════════

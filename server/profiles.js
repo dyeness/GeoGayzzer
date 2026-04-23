@@ -87,7 +87,7 @@ function getPrestige(level) {
 }
 
 /** XP earned at the end of a round */
-function calcRoundXp(score, distance, stolen, roundPlacement, playerCount) {
+function calcRoundXp(score, distance, stolen, roundPlacement, playerCount, isSolo = false) {
   // Base: score / 8 (more generous than /10)
   const scoreXp = Math.floor(score / 8);
 
@@ -109,15 +109,19 @@ function calcRoundXp(score, distance, stolen, roundPlacement, playerCount) {
   // Steal bonus
   const stealBonus = stolen > 0 ? 30 : 0;
 
-  return scoreXp + placeBonus + accuracyBonus + distBonus + stealBonus;
+  const total = scoreXp + placeBonus + accuracyBonus + distBonus + stealBonus;
+  return isSolo ? Math.floor(total / 2) : total;
 }
 
 /** XP bonus earned for finishing the whole match */
-function calcMatchXp(matchPlacement, playerCount, allRounds90, bigOpponents) {
+function calcMatchXp(matchPlacement, playerCount, allRounds90, bigOpponents, isSolo = false) {
   // Always give participation XP
   const participationXp = 50;
 
-  if (playerCount <= 1) return participationXp;
+  if (playerCount <= 1) {
+    // Solo: participation XP only, halved
+    return isSolo ? Math.floor(participationXp / 2) : participationXp;
+  }
 
   const bonuses = [600, 300, 180, 100, 50, 25];
   let xp = (bonuses[Math.min(matchPlacement - 1, bonuses.length - 1)] ?? 25) + participationXp;
@@ -264,7 +268,7 @@ function updateAfterRound(roundResults) {
     if ((r.lostToSteal || 0) > 0) prof._match.victimCount += 1;
 
     // XP (new expanded formula)
-    prof.totalXp      += calcRoundXp(r.score, r.distance, r.stolen || 0, r.roundPlacement, r.playerCount);
+    prof.totalXp      += calcRoundXp(r.score, r.distance, r.stolen || 0, r.roundPlacement, r.playerCount, r.isSolo === true);
     prof.roundsPlayed += 1;
 
     // Records
@@ -362,7 +366,7 @@ function updateAfterGame(gameResults) {
     const bigOpponents = r.matchPlacement === 1 && r.playerCount >= 4;
 
     // XP (expanded formula with bonus params)
-    prof.totalXp     += calcMatchXp(r.matchPlacement, r.playerCount, allRounds90, bigOpponents);
+    prof.totalXp     += calcMatchXp(r.matchPlacement, r.playerCount, allRounds90, bigOpponents, r.mode === 'solo');
     prof.gamesPlayed += 1;
 
     // ELO (multiplayer only, floor at 100)
