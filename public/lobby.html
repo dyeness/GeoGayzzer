@@ -26,9 +26,6 @@
           <button id="btn-copy-code" class="btn btn-sm btn-outline" title="Скопировать">📋</button>
         </div>
       </div>
-      <div class="lobby-info">
-        <p>Поделись кодом комнаты с друзьями. Убедись, что вы подключены через Radmin VPN.</p>
-      </div>
       <div class="lobby-players">
         <h3>Игроки <span id="lobby-player-count">(0/10)</span></h3>
         <ul id="lobby-player-list"></ul>
@@ -80,7 +77,11 @@
       </div>
       <!-- Host Game Settings (visible to host only) -->
       <div id="lobby-settings" class="lobby-settings hidden">
-        <h3 class="settings-title">⚙️ Настройки игры</h3>
+        <div class="settings-header">
+          <h3 class="settings-title">&#9881;&#65039; Настройки игры</h3>
+          <button id="btn-settings-toggle" class="btn btn-sm btn-outline settings-toggle-btn" title="Свернуть">&#8963;</button>
+        </div>
+        <div id="lobby-settings-body">
         <div class="setting-row">
           <label class="setting-label">Режим игры</label>
           <select id="setting-mode" class="setting-select">
@@ -114,10 +115,11 @@
             <option value="0">Отключён</option>
           </select>
         </div>
-      </div>
-
+        </div><!-- /#lobby-settings-body -->
+      </div><!-- /#lobby-settings -->
       <div class="lobby-actions">
         <button id="btn-start-game" class="btn btn-primary btn-lg" style="display:none;">Начать игру</button>
+        <button id="btn-force-start" class="btn btn-outline" style="display:none;">⚡ Запустить соло</button>
         <p id="lobby-wait-msg" class="text-muted">Ожидание хоста...</p>
         <button id="btn-leave-lobby" class="btn btn-outline">Покинуть комнату</button>
       </div>
@@ -133,15 +135,15 @@
       </div>
 
       <!-- Progress overlay shown while server resolves panoramas -->
-      <div id="resolving-overlay" class="resolving-overlay hidden">
+      <div id="resolving-overlay" class="resolving-overlay hidden" style="display:none">
         <div class="resolving-spinner"></div>
         <p id="resolving-text">Поиск панорам…</p>
         <div class="resolving-track">
           <div id="resolving-bar" class="resolving-bar" style="width:0%"></div>
         </div>
       </div>
-    </div>
-  </div>
+    </div><!-- /.lobby-container -->
+  </div><!-- /#screen-lobby -->
 
   <!-- ============ SCRIPTS ============ -->
   <script src="/socket.io/socket.io.js"></script>

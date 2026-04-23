@@ -398,8 +398,8 @@
 .color-picker-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0 4px;
+  gap: 10px;
+  padding: 6px 0 2px;
 }
 .color-picker-label {
   font-size: var(--font-sm);
@@ -407,14 +407,13 @@
   white-space: nowrap;
 }
 .color-swatches {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  max-width: 280px;
+  display: grid;
+  grid-template-columns: repeat(8, 22px);
+  gap: 5px;
 }
 .color-swatch {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
@@ -732,6 +731,30 @@
   flex-shrink: 0;
 }
 
+/* ── Banner on player-row (CSS multi-background: overlay + gif) ── */
+.player-row.has-banner {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.62)),
+    var(--row-banner);
+  background-size: cover;
+  background-position: center;
+}
+
+/* ── Banner on final leaderboard rows ── */
+.lb-row {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+.lb-row.has-banner {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.62)),
+    var(--row-banner);
+  background-size: cover;
+  background-position: center;
+  padding: 6px 10px;
+}
+
 /* ══════════════════════════════════════════════════════════
    Lobby Chat
    ══════════════════════════════════════════════════════════ */
@@ -939,6 +962,25 @@
   border-bottom: 1px solid var(--border-red);
   margin: 0;
 }
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-red);
+  padding-right: 8px;
+}
+.settings-header .settings-title { border-bottom: none; flex: 1; }
+.settings-toggle-btn {
+  padding: 2px 8px;
+  font-size: 14px;
+  line-height: 1;
+  border-color: transparent;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+.lobby-settings.collapsed .settings-toggle-btn { transform: rotate(180deg); }
+.lobby-settings.collapsed #lobby-settings-body { display: none; }
 .setting-row {
   display: flex;
   align-items: center;
@@ -1119,4 +1161,43 @@
   line-height: 1;
   margin: 0 3px;
   vertical-align: middle;
+}
+
+/* ══ Lobby player row layout ═══════════════════════════════════════ */
+.lp-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.lp-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.lp-team-icon {
+  width: 18px;
+  text-align: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.lobby-player-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-sm);
+}
+.lobby-player-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.lobby-hint {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  margin: 0;
+  text-align: center;
 }

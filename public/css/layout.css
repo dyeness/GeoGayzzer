@@ -72,8 +72,8 @@
 /* ── Lobby ── */
 .lobby-container {
   width: 100%;
-  max-width: 500px;
-  padding: 40px;
+  max-width: 480px;
+  padding: 24px 20px;
   text-align: center;
 }
 .lobby-header h2 {
@@ -105,17 +105,17 @@
   color: var(--text-secondary);
   font-size: var(--font-sm);
 }
-.lobby-players { margin: 20px 0; }
+.lobby-players { margin: 10px 0; }
 .lobby-players h3 {
   font-size: var(--font-sm);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 2px;
 }
-.lobby-players ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.lobby-players ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .lobby-players li {
-  padding: 10px 16px;
+  padding: 6px 12px;
   background: var(--bg-card);
   border-radius: var(--radius-sm);
   display: flex;
@@ -140,9 +140,9 @@
 .lobby-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  margin-top: 20px;
+  margin-top: 14px;
 }
 
 /* ── Game ── */

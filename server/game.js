@@ -76,7 +76,7 @@ class GameRoom {
       isHost:   id === this.hostId,
       isReady:  this.readySet.has(id),
       team:     this.teamMode ? (this.teams.get(id) ?? null) : null,
-      preTeam:  this.teamMode ? (this.preTeams.get(id) ?? null) : null,
+      preTeam:  this.preTeams.get(id) ?? null,
       streak:   p.streak,
     }));
   }

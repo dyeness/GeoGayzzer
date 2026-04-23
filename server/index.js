@@ -535,6 +535,27 @@ app.get('/api/profile/:nickname', (req, res) => {
   res.json(prof);
 });
 
+/* Allowed banner GIF keys (whitelist to prevent abuse) */
+const ALLOWED_BANNERS = [
+  'city_night', 'rain_window', 'forest_fog', 'ocean_waves',
+  'neon_city', 'space_drift', 'aurora', 'desert_dunes',
+  'mountain_snow', 'fireplace', 'cherry_blossom',
+];
+
+app.patch('/api/profile/:nickname/banner', (req, res) => {
+  const token = req.headers['x-auth-token'] || req.body?.token;
+  const acc = verifyToken(token);
+  if (!acc) return res.status(401).json({ error: 'Не авторизован' });
+  if (acc.nickname.toLowerCase() !== req.params.nickname.toLowerCase())
+    return res.status(403).json({ error: 'Доступ запрещён' });
+  const { banner } = req.body || {};
+  if (banner !== null && banner !== undefined && !ALLOWED_BANNERS.includes(banner))
+    return res.status(400).json({ error: 'Неизвестный баннер' });
+  const ok = profiles.setProfileBanner(req.params.nickname, banner ?? null);
+  if (!ok) return res.status(404).json({ error: 'Профиль не найден' });
+  res.json({ ok: true, banner: banner ?? null });
+});
+
 app.get('/api/profiles', (_req, res) => {
   res.json(profiles.getAllProfiles());
 });
@@ -695,24 +716,62 @@ function finalizeGameProfiles(room) {
     nickname:       p.nickname,
     totalScore:     p.totalScore,
     matchPlacement: idx + 1,
+    team:           p.team,
+    color:          p.color,
   }));
+
+  // Build per-round snapshot: location + each player's guess, score, distance
+  const roundsData = room.locations.slice(0, room.totalRounds).map((loc, rIdx) => {
+    const playerRounds = [];
+    for (const [id, p] of room.players) {
+      const guess = p.guesses[rIdx] ?? null;
+      const score = p.scores[rIdx]  ?? 0;
+      const dist  = guess
+        ? Math.round(scoring.haversine(loc.lat, loc.lng, guess.lat, guess.lng) * 10) / 10
+        : null;
+      playerRounds.push({
+        nickname: p.nickname,
+        color:    p.color,
+        team:     room.teamMode ? (room.teams.get(id) ?? null) : null,
+        guess,
+        score,
+        distance: dist,
+      });
+    }
+    playerRounds.sort((a, b) => b.score - a.score);
+    return {
+      round:    rIdx + 1,
+      location: { lat: loc.lat, lng: loc.lng, country: loc.country ?? null, city: loc.city ?? null },
+      players:  playerRounds,
+    };
+  });
+
+  const mode = room.teamMode ? 'team' : leaderboard.length > 1 ? 'standard' : 'solo';
+
   const gameProfileData = leaderboard.map((p, idx) => ({
     nickname:       p.nickname,
     totalScore:     p.totalScore,
     matchPlacement: idx + 1,
     playerCount:    leaderboard.length,
     rounds:         room.totalRounds,
+    teamMode:       room.teamMode,
+    mode,
     allPlayers,
+    roundsData,
   }));
   return profiles.updateAfterGame(gameProfileData);
 }
 
 /** Build enriched game-over payload: leaderboard with current ELO + avgElo + team data. */
 function buildGameOverPayload(room, eloChanges) {
-  const lb = room.getLeaderboard().map(p => ({
-    ...p,
-    elo: profiles.getProfile(p.nickname)?.elo ?? 1000,
-  }));
+  const lb = room.getLeaderboard().map(p => {
+    const prof = profiles.getProfile(p.nickname);
+    return {
+      ...p,
+      elo:    prof?.elo    ?? 1000,
+      banner: prof?.banner ?? null,
+    };
+  });
   const avgElo = lb.length > 0
     ? Math.round(lb.reduce((s, p) => s + p.elo, 0) / lb.length)
     : 0;
@@ -885,7 +944,7 @@ io.on('connection', (socket) => {
       const room = getRoomByPlayer(socket.id);
       if (!room) return cb?.({ success: false, error: 'Komната не найдена' });
       if (room.hostId !== socket.id) return cb?.({ success: false, error: 'Только хост может начать' });
-      if (room.players.size < 1) return cb?.({ success: false, error: 'Недостаточно игроков' });
+      if (!data?.forceStart && room.players.size < 2) return cb?.({ success: false, error: 'Нужно минимум 2 игрока' });
 
       // Apply host-configured settings before starting
       room.teamMode          = !!data?.teamMode;

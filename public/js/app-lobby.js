@@ -4,6 +4,12 @@
  */
 (() => {
   const roomCode = window.location.pathname.split('/')[2]?.toUpperCase();
+  const _isDevMode = new URLSearchParams(window.location.search).has('dev');
+
+  function _showForceStartIfDev(isHost) {
+    const btn = document.getElementById('btn-force-start');
+    if (btn) btn.style.display = (_isDevMode && isHost) ? '' : 'none';
+  }
 
   function _restoreColor() {
     const saved = Player.getColor() || '#4fc3f7';
@@ -33,10 +39,12 @@
       UI.updateLobby(roomCode, data.players, GameState.get('isHost'));
       _updateTakenSwatches(data.players);
       _syncMyTeamBtn(data.players);
+      _showForceStartIfDev(GameState.get('isHost'));
     });
     Network.on('onPlayerLeft', (data) => {
       UI.updateLobby(roomCode, data.players, GameState.get('isHost'));
       _updateTakenSwatches(data.players);
+      _showForceStartIfDev(GameState.get('isHost'));
     });
     // Game started — navigate everyone to game page
     Network.on('onRoundStart', () => {
@@ -166,6 +174,29 @@
       window.location.href = '/menu';
     });
 
+    document.getElementById('btn-settings-toggle')?.addEventListener('click', () => {
+      const settingsEl = document.getElementById('lobby-settings');
+      if (settingsEl) settingsEl.classList.toggle('collapsed');
+    });
+
+    document.getElementById('btn-force-start')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-force-start');
+      if (btn) { btn.disabled = true; btn.textContent = 'Запуск…'; }
+      try {
+        const settings = {
+          forceStart:    true,
+          teamMode:      document.getElementById('setting-mode')?.value === 'team',
+          totalRounds:   parseInt(document.getElementById('setting-rounds')?.value  || '5'),
+          timeLimitSecs: parseInt(document.getElementById('setting-timer')?.value   || '0'),
+          streakBonus:   document.getElementById('setting-streak')?.value !== '0',
+        };
+        await Network.startGame([], settings);
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ Запустить соло'; }
+      }
+    });
+
     document.getElementById('btn-copy-code')?.addEventListener('click', () => {
       navigator.clipboard?.writeText(roomCode);
     });
@@ -225,6 +256,7 @@
       GameState.set('mode', 'multiplayer');
 
       UI.updateLobby(roomCode, data.players, data.isHost);
+      _showForceStartIfDev(data.isHost);
       _restoreSettings();
       // Apply restored team mode to selector
       const isTeamMode = document.getElementById('setting-mode')?.value === 'team';

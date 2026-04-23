@@ -3,6 +3,24 @@
  */
 
 const UI = (() => {
+  /* ── Banner GIF map (key → URL) ── */
+  const BANNER_URL_MAP = {
+    city_night:     'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHdocW1zMGp6anV5ODZuYmNnaGZhN3VuaXYzMjdlbHdtcXNjZHFwbyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jDuKZ5l0ZvPIM3PZz6/giphy.gif',
+    rain_window:    'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeHRpNzFmaTJlbG96bnl1eTdjcnZscDVxOTdkbmE0OXBpc2M1cThwZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/u5IJdDXKFfGWi01ydS/giphy.gif',
+    forest_fog:     'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHZoMG9ndXY2bGQ4bnFtbTlnNmZqajdnZGpsMW9obXhuMnUzeXllcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/C4wk6m8Q04DeDRckhj/giphy.gif',
+    ocean_waves:    'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3pqeWlsOGNzbHJpeXI5cGJndXRtZ2MxZTZxcHJ5ZmVqcDVxd3FkbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hQIrijIRX3kKvaYaua/giphy.gif',
+    neon_city:      'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMTkyNzdwZWUxMHBjZTZvd25xemhsYm9zdGEwd2k3MWYxb3pqdGljOSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lwo2cfTZq6TtsxeeW8/giphy.gif',
+    space_drift:    'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzMzOGhpY3h6ZmN4bDUxMXhibnNxd241cHFzdm04a3I4bnR3bGxlOSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/5YOUEDaB3CGNbnsG2i/giphy.gif',
+    aurora:         'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzMzOGhpY3h6ZmN4bDUxMXhibnNxd241cHFzdm04a3I4bnR3bGxlOSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/NrXyKCIbSebv5Sgxpj/giphy.gif',
+    desert_dunes:   'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/sG0LZNRWqTaijf2EEj/giphy.gif',
+    mountain_snow:  'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/WQ3Uz2IGuyC4FtrZIn/giphy.gif',
+    fireplace:      'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/0s0HrYMIlCVqOspDRd/giphy.gif',
+    cherry_blossom: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/JMlIy2LIUY6j8vG4FW/giphy.gif',
+  };
+
+  function resolveBannerUrl(key) {
+    return key ? (BANNER_URL_MAP[key] || null) : null;
+  }
   /* ── Screen Management ── */
 
   const screens = {
@@ -96,24 +114,36 @@ const UI = (() => {
     if (countEl) countEl.textContent = `(${players.length}/10)`;
 
     if (listEl) {
-  listEl.innerHTML = players.map((p) => {
+      const inTeamMode = !document.getElementById('team-selector')?.classList.contains('hidden');
+      listEl.innerHTML = players.map((p) => {
         const prestige = (p.prestige || 0) > 0
           ? ` <span class="prestige-sm">[${p.prestige}\ud83d\udc8e]</span>`
           : '';
-        const meta = `<span class="lobby-player-meta">Ур. ${p.level ?? 1} &middot; ${eloBadge(p.elo ?? 1000)}</span>`;
-        const teamBadge = p.preTeam === 0 ? '<span class="team-badge-sm team-red">🔴</span>'
-                        : p.preTeam === 1 ? '<span class="team-badge-sm team-blue">🔵</span>'
-                        : '';
+        const teamIcon = p.preTeam === 0 ? '<span class="lp-team-icon">\ud83d\udd34</span>'
+                       : p.preTeam === 1 ? '<span class="lp-team-icon">\ud83d\udd35</span>'
+                       : inTeamMode ? '<span class="lp-team-icon" style="opacity:0.25">\u25e6</span>'
+                       : '';
+        const badges = (p.isHost ? '<span class="host-badge">\u0425\u043e\u0441\u0442</span>' : '') +
+                       (p.isReady ? '<span class="ready-badge">\u2705</span>' : '');
         return `
         <li>
-          <span class="player-color-dot" style="background:${p.color || '#4fc3f7'}"></span>
-          <span class="lobby-player-name">${escapeHtml(p.nickname)}${prestige}</span>
-          ${teamBadge}
-          ${meta}
-          ${p.isHost ? '<span class="host-badge">\u0425\u043e\u0441\u0442</span>' : ''}
-          ${p.isReady ? '<span class="ready-badge">\u2705</span>' : ''}
+          <div class="lp-left">
+            ${teamIcon}
+            <span class="player-color-dot" style="background:${p.color || '#4fc3f7'}"></span>
+            <span class="lobby-player-name">${escapeHtml(p.nickname)}${prestige}</span>
+          </div>
+          <div class="lp-right">
+            <span class="lobby-player-meta">\u0423\u0440.${p.level ?? 1} &middot; ${eloBadge(p.elo ?? 1000)}</span>
+            ${badges}
+          </div>
         </li>`;
       }).join('');
+    }
+
+    if (startBtn && isHost) {
+      const canStart = players.length >= 2;
+      startBtn.disabled = !canStart;
+      startBtn.title = canStart ? '' : `\u041d\u0443\u0436\u043d\u043e \u043c\u0438\u043d\u0438\u043c\u0443\u043c 2 \u0438\u0433\u0440\u043e\u043a\u0430 (${players.length}/2)`;
     }
 
     if (startBtn) startBtn.style.display = isHost ? 'block' : 'none';
@@ -271,8 +301,12 @@ const UI = (() => {
       const eloHtml = (delta !== undefined && p.elo != null)
         ? eloBadge(p.elo, delta)
         : (p.elo != null ? eloBadge(p.elo) : '');
+      const bannerGifUrl = resolveBannerUrl(p.banner || null);
+      const bannerBg = bannerGifUrl
+        ? `style="--row-banner:url('${bannerGifUrl}')"` : '';
+      const bannerCls = bannerGifUrl ? ' has-banner' : '';
       return `
-      <li>
+      <li class="lb-row${bannerCls}" ${bannerBg}>
         ${p.color ? `<span class="player-color-dot" style="background:${p.color}"></span>` : ''}
         <span class="lb-name">
           ${medal ? `<span class="lb-medal">${medal}</span>` : ''}
@@ -313,7 +347,10 @@ const UI = (() => {
           ? ['🥇', '🥈', '🥉'][i]
           : `${i + 1}`;
         const prestige = p.prestige > 0 ? `<span class="player-row-prestige">${p.prestige}💎</span>` : '';
-        return `<a href="${profileUrl}" class="player-row" style="text-decoration:none;color:inherit;">
+        const bannerGifUrl = resolveBannerUrl(p.banner || null);
+        const bannerStyle  = bannerGifUrl ? ` --row-banner:url('${bannerGifUrl}')` : '';
+        const hasBannerCls = bannerGifUrl ? ' has-banner' : '';
+        return `<a href="${profileUrl}" class="player-row${hasBannerCls}" style="text-decoration:none;color:inherit;${bannerStyle}">
           <span class="player-row-rank${i < 3 ? '-medal' : ''}">${rankDisplay}</span>
           <span class="player-row-avatar">${escapeHtml(avatarLetter)}</span>
           <span class="player-row-info">

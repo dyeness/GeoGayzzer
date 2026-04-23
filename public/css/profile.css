@@ -14,6 +14,9 @@
   max-width: 720px;
   margin: 0 auto;
   position: relative;
+  z-index: 1;
+  /* Allow page to scroll */
+  overflow-y: visible;
 }
 
 .profile-back {
@@ -714,3 +717,209 @@
 .gh-opp-name:hover { text-decoration: underline; color: var(--accent-primary); }
 .gh-opp-score { flex-shrink: 0; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
 .gh-no-opponents { font-size: var(--font-sm); color: var(--text-muted); margin: 0; }
+
+/* ══ Game History — mode badges & round report ══════════════════════════ */
+.gh-mode-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.gh-mode-team { background: rgba(30,136,229,0.18); color: #64b5f6; }
+.gh-mode-std  { background: rgba(200,0,0,0.14);    color: var(--accent-primary); }
+.gh-mode-solo { background: rgba(255,255,255,0.07); color: var(--text-muted); }
+
+.gh-team-badge { font-size: 13px; flex-shrink: 0; }
+
+/* Players table in expanded view */
+.gh-players {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+/* Round blocks */
+.gh-rounds {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.gh-round-block {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.gh-round-title {
+  padding: 5px 10px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.gh-round-loc { font-weight: 400; color: var(--text-primary); text-transform: none; letter-spacing: 0; }
+.gh-round-players { display: flex; flex-direction: column; gap: 0; }
+.gh-round-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.gh-round-player:last-child { border-bottom: none; }
+.gh-round-place { flex-shrink: 0; min-width: 20px; font-size: 13px; }
+.gh-round-nick  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+.gh-coords { color: var(--text-muted); font-family: monospace; font-size: 10px; flex-shrink: 0; white-space: nowrap; }
+.gh-round-dist  { flex-shrink: 0; color: var(--text-secondary); white-space: nowrap; min-width: 55px; text-align: right; }
+.gh-round-score { flex-shrink: 0; font-weight: 700; color: var(--accent-primary); white-space: nowrap; min-width: 55px; text-align: right; }
+.gh-no-data { color: var(--text-muted); font-size: var(--font-xs); padding: 4px 10px; }
+
+/* ── Profile banner: full-page background ─────────────────────────── */
+
+.profile-bg-banner {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(22px) saturate(0.7);
+  transform: scale(1.06); /* hide blur edges */
+  pointer-events: none;
+  /* When no banner: transparent so page bg-primary shows through */
+  background-color: transparent;
+}
+/* Dark overlay at 80% — only shown when a banner is active */
+.profile-bg-banner.active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.80);
+}
+/* When banner is active, body needs to allow the fixed bg to show */
+body.has-profile-banner {
+  background: var(--bg-primary);
+}
+
+/* ── Profile banner: header-card background ───────────────────────── */
+
+.profile-banner-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  transition: background-image 0.3s ease;
+}
+
+.profile-header-card.has-banner .profile-banner-bg {
+  opacity: 1;
+}
+.profile-header-card.has-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1;
+}
+/* Bring all direct children above the overlay */
+.profile-header-card.has-banner > *:not(.profile-banner-bg) {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Edit-banner button ───────────────────────────────────────────── */
+
+.btn-edit-banner {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 16px;
+  padding: 4px 7px;
+  cursor: pointer;
+  z-index: 3;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-edit-banner:hover {
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--text-primary);
+}
+
+/* ── Banner picker modal ──────────────────────────────────────────── */
+
+.banner-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.banner-modal-overlay.hidden { display: none; }
+
+.banner-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-red);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px 24px;
+  max-width: 540px;
+  width: 100%;
+  position: relative;
+}
+.banner-modal h2 {
+  font-family: var(--font-display);
+  font-size: var(--font-xl);
+  letter-spacing: 2px;
+  margin: 0 0 6px;
+}
+.banner-modal .modal-subtitle {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  margin: 0 0 18px;
+}
+
+.banner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.banner-item {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: border-color 0.15s, transform 0.15s;
+  padding: 0;
+}
+.banner-item:hover { transform: scale(1.04); }
+.banner-item--active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(204, 0, 0, 0.35);
+}
+
+.banner-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}

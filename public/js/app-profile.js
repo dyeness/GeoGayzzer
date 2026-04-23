@@ -67,6 +67,133 @@
     });
   }
 
+  /* ── Banner IDs and their GIF URLs ────────────────────────────────────── */
+  const BANNER_DEFS = [
+    { key: 'city_night',      label: 'Ночной город',    url: 'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHdocW1zMGp6anV5ODZuYmNnaGZhN3VuaXYzMjdlbHdtcXNjZHFwbyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jDuKZ5l0ZvPIM3PZz6/giphy.gif' },
+    { key: 'rain_window',     label: 'Дождь',            url: 'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeHRpNzFmaTJlbG96bnl1eTdjcnZscDVxOTdkbmE0OXBpc2M1cThwZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/u5IJdDXKFfGWi01ydS/giphy.gif' },
+    { key: 'forest_fog',      label: 'Туманный лес',    url: 'https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHZoMG9ndXY2bGQ4bnFtbTlnNmZqajdnZGpsMW9obXhuMnUzeXllcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/C4wk6m8Q04DeDRckhj/giphy.gif' },
+    { key: 'ocean_waves',     label: 'Океан',           url: 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3pqeWlsOGNzbHJpeXI5cGJndXRtZ2MxZTZxcHJ5ZmVqcDVxd3FkbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hQIrijIRX3kKvaYaua/giphy.gif' },
+    { key: 'neon_city',       label: 'Неон',            url: 'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMTkyNzdwZWUxMHBjZTZvd25xemhsYm9zdGEwd2k3MWYxb3pqdGljOSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lwo2cfTZq6TtsxeeW8/giphy.gif' },
+    { key: 'space_drift',     label: 'Космос',          url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzMzOGhpY3h6ZmN4bDUxMXhibnNxd241cHFzdm04a3I4bnR3bGxlOSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/5YOUEDaB3CGNbnsG2i/giphy.gif' },
+    { key: 'aurora',          label: 'Северное сияние', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzMzOGhpY3h6ZmN4bDUxMXhibnNxd241cHFzdm04a3I4bnR3bGxlOSZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/NrXyKCIbSebv5Sgxpj/giphy.gif' },
+    { key: 'desert_dunes',    label: 'Пустыня',         url: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/sG0LZNRWqTaijf2EEj/giphy.gif' },
+    { key: 'mountain_snow',   label: 'Горы в снегу',   url: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/WQ3Uz2IGuyC4FtrZIn/giphy.gif' },
+    { key: 'fireplace',       label: 'Камин',           url: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/0s0HrYMIlCVqOspDRd/giphy.gif' },
+    { key: 'cherry_blossom',  label: 'Сакура',          url: 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3bGU0eWwzOG9uazAyMWJxenlsOHdmNjUwcGpnaDNvcjFlemczaGszdCZlcD12MV9naWZzX3JlbGF0ZWQmY3Q9Zw/JMlIy2LIUY6j8vG4FW/giphy.gif' },
+  ];
+
+  /** Return the GIF URL for a given banner key (or null) */
+  function bannerUrl(key) {
+    if (!key) return null;
+    const def = BANNER_DEFS.find(d => d.key === key);
+    return def ? def.url : null;
+  }
+
+  /** Apply banner visually to header card + full-page bg */
+  function _applyBanner(key) {
+    const url = bannerUrl(key);
+    const pageBg    = document.getElementById('profile-bg-banner');
+    const cardBg    = document.getElementById('profile-card-banner');
+    const headerCard = document.querySelector('.profile-header-card');
+    if (pageBg) {
+      pageBg.style.backgroundImage = url ? `url("${url}")` : '';
+      pageBg.classList.toggle('active', !!url);
+    }
+    if (cardBg)   cardBg.style.backgroundImage  = url ? `url("${url}")` : '';
+    if (headerCard) headerCard.classList.toggle('has-banner', !!url);
+  }
+
+  /** Init banner picker modal */
+  function initBannerPicker(currentKey, nickname) {
+    const overlay  = document.getElementById('banner-modal-overlay');
+    const editBtn  = document.getElementById('btn-edit-banner');
+    const closeBtn = document.getElementById('banner-modal-close');
+    const saveBtn  = document.getElementById('btn-banner-save');
+    const removeBtn= document.getElementById('btn-banner-remove');
+    const grid     = document.getElementById('banner-grid');
+    if (!overlay || !editBtn) return;
+
+    let selectedKey = currentKey || null;
+
+    function renderGrid() {
+      grid.innerHTML = BANNER_DEFS.map(def => {
+        const active = def.key === selectedKey ? ' banner-item--active' : '';
+        return `<button class="banner-item${active}" data-key="${def.key}"
+          style="background-image:url('${def.url}')" title="${def.label}"></button>`;
+      }).join('');
+    }
+
+    function openModal() {
+      selectedKey = currentKey || null;
+      renderGrid();
+      saveBtn.disabled = !selectedKey;
+      overlay.classList.remove('hidden');
+    }
+
+    editBtn.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', () => overlay.classList.add('hidden'));
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.add('hidden');
+    });
+
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.banner-item');
+      if (!btn) return;
+      grid.querySelectorAll('.banner-item').forEach(b => b.classList.remove('banner-item--active'));
+      btn.classList.add('banner-item--active');
+      selectedKey = btn.dataset.key;
+      saveBtn.disabled = false;
+    });
+
+    removeBtn?.addEventListener('click', async () => {
+      const ok = await _saveBanner(nickname, null);
+      if (ok !== false) {
+        currentKey = null;
+        _applyBanner(null);
+        overlay.classList.add('hidden');
+      }
+    });
+
+    saveBtn?.addEventListener('click', async () => {
+      if (!selectedKey) return;
+      const ok = await _saveBanner(nickname, selectedKey);
+      if (ok !== false) {
+        currentKey = selectedKey;
+        _applyBanner(selectedKey);
+        overlay.classList.add('hidden');
+      }
+    });
+  }
+
+  async function _saveBanner(nickname, key) {
+    // Try Player.getToken(), fall back to raw localStorage
+    const token = Player.getToken()
+      || (() => { try { return JSON.parse(localStorage.getItem('geogayzzer_player'))?.token; } catch { return null; } })();
+    if (!token) {
+      console.error('[banner] No auth token — cannot save. Is the user logged in?');
+      alert('Ошибка: вы не авторизованы. Войдите в аккаунт.');
+      return false;
+    }
+    try {
+      const res = await fetch(`/api/profile/${encodeURIComponent(nickname)}/banner`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+        body: JSON.stringify({ banner: key }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('[banner] Save failed:', res.status, data);
+        alert(`Ошибка сохранения фона: ${data.error || res.status}`);
+        return false;
+      }
+      console.log('[banner] Saved ok:', data);
+      return true;
+    } catch (err) {
+      console.error('[banner] Save error:', err);
+      return false;
+    }
+  }
+
   /* ── Render ────────────────────────────────────────────────────────────── */
 
   function renderProfile(prof) {
@@ -131,6 +258,15 @@
 
     /* Last game tab */
     renderLastGame(prof.lastGame);
+
+    /* Banner */
+    _applyBanner(prof.banner || null);
+
+    /* Banner picker (own profile only) */
+    const myNick = Player.getNickname();
+    const isOwn = myNick && myNick.toLowerCase() === prof.nickname.toLowerCase();
+    const editBtn = document.getElementById('btn-edit-banner');
+    if (editBtn) editBtn.classList.toggle('hidden', !isOwn);
   }
 
   function renderAchievements(list) {
@@ -211,36 +347,97 @@
       return;
     }
 
-    container.innerHTML = history.map((g, idx) => {
-      const medal = g.placement === 1 ? '🥇' : g.placement === 2 ? '🥈' : g.placement === 3 ? '🥉' : `${g.placement}-е`;
-      const eloBadgeHtml = g.newElo != null
-        ? UI.eloBadge(g.newElo, g.eloDelta)
-        : '';
+    function fmtDist(km) {
+      if (km === null || km === undefined) return '—';
+      return km < 1 ? Math.round(km * 1000) + ' м' : km.toFixed(1) + ' км';
+    }
 
-      const opponents = (g.opponents || []).map(op => {
-        const opMedal = op.matchPlacement === 1 ? '🥇' : op.matchPlacement === 2 ? '🥈' : op.matchPlacement === 3 ? '🥉' : `${op.matchPlacement}.`;
-        const profileLink = `/profile/${encodeURIComponent(op.nickname)}`;
-        return `<div class="gh-opponent">
-          <span class="gh-opp-place">${opMedal}</span>
-          <a href="${profileLink}" class="gh-opp-name">${escapeHtml(op.nickname)}</a>
-          <span class="gh-opp-score">${op.totalScore.toLocaleString()} pts</span>
-        </div>`;
-      }).join('');
+    function teamLabel(team) {
+      if (team === 0) return '<span class="gh-team-badge gh-team-0">\ud83d\udd34</span>';
+      if (team === 1) return '<span class="gh-team-badge gh-team-1">\ud83d\udd35</span>';
+      return '';
+    }
+
+    function modeBadge(mode) {
+      if (mode === 'team')     return '<span class="gh-mode-badge gh-mode-team">\ud83d\udc65 \u041a\u043e\u043c\u0430\u043d\u0434\u043d\u044b\u0439</span>';
+      if (mode === 'standard') return '<span class="gh-mode-badge gh-mode-std">\ud83c\udfc6 \u0421\u0442\u0430\u043d\u0434\u0430\u0440\u0442</span>';
+      return '<span class="gh-mode-badge gh-mode-solo">\ud83d\udc64 \u0421\u043e\u043b\u043e</span>';
+    }
+
+    container.innerHTML = history.map((g, idx) => {
+      const medal = g.placement === 1 ? '\ud83e\udd47' : g.placement === 2 ? '\ud83e\udd48' : g.placement === 3 ? '\ud83e\udd49' : `${g.placement}-\u0435`;
+      const eloBadgeHtml = g.newElo != null ? UI.eloBadge(g.newElo, g.eloDelta) : '';
+      const mode = g.mode || (g.players > 1 ? 'standard' : 'solo');
+      const isTeam = mode === 'team';
+
+      // All players section (show everyone including self)
+      const allPlayers = (g.allPlayers && g.allPlayers.length > 0)
+        ? g.allPlayers
+        : [];
+
+      const playersHtml = allPlayers.length > 0
+        ? `<div class="gh-players">
+            ${allPlayers.map(op => {
+              const opMedal = op.matchPlacement === 1 ? '\ud83e\udd47' : op.matchPlacement === 2 ? '\ud83e\udd48' : op.matchPlacement === 3 ? '\ud83e\udd49' : `${op.matchPlacement}.`;
+              const profileLink = `/profile/${encodeURIComponent(op.nickname)}`;
+              const teamBadge = isTeam ? teamLabel(op.team) : '';
+              return `<div class="gh-opponent">
+                <span class="gh-opp-place">${opMedal}</span>
+                ${teamBadge}
+                <a href="${profileLink}" class="gh-opp-name">${escapeHtml(op.nickname)}</a>
+                <span class="gh-opp-score">${op.totalScore.toLocaleString()} pts</span>
+              </div>`;
+            }).join('')}
+          </div>`
+        : '<p class="gh-no-opponents">\u0421\u043e\u043b\u043e-\u0438\u0433\u0440\u0430</p>';
+
+      // Round report
+      const roundsHtml = (g.roundsData && g.roundsData.length > 0)
+        ? `<div class="gh-rounds">
+            ${g.roundsData.map(r => {
+              const locName = r.location
+                ? (r.location.city ? `${r.location.city}, ${r.location.country || ''}` : (r.location.country || `${r.location.lat.toFixed(2)}, ${r.location.lng.toFixed(2)}`))
+                : `\u0420\u0430\u0443\u043d\u0434 ${r.round}`;
+              const guessRows = (r.players || []).map((rp, rpIdx) => {
+                const gMedal = rpIdx === 0 ? '\ud83e\udd47' : rpIdx === 1 ? '\ud83e\udd48' : rpIdx === 2 ? '\ud83e\udd49' : `${rpIdx + 1}.`;
+                const teamB = isTeam ? teamLabel(rp.team) : '';
+                const guessCoords = rp.guess
+                  ? `<span class="gh-coords">${rp.guess.lat.toFixed(3)}, ${rp.guess.lng.toFixed(3)}</span>`
+                  : '<span class="gh-coords">\u2014</span>';
+                const distStr = fmtDist(rp.distance);
+                return `<div class="gh-round-player">
+                  <span class="gh-round-place">${gMedal}</span>
+                  ${teamB}
+                  <span class="gh-round-nick">${escapeHtml(rp.nickname)}</span>
+                  ${guessCoords}
+                  <span class="gh-round-dist">${distStr}</span>
+                  <span class="gh-round-score">+${rp.score.toLocaleString()}</span>
+                </div>`;
+              }).join('');
+              return `<div class="gh-round-block">
+                <div class="gh-round-title">\u0420\u0430\u0443\u043d\u0434 ${r.round}: <span class="gh-round-loc">${escapeHtml(locName)}</span></div>
+                <div class="gh-round-players">${guessRows || '<span class="gh-no-data">\u041d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445</span>'}</div>
+              </div>`;
+            }).join('')}
+          </div>`
+        : '';
 
       return `<div class="gh-card" data-idx="${idx}">
         <div class="gh-header" role="button" tabindex="0">
           <span class="gh-date">${fmtDate(g.date)}</span>
+          ${modeBadge(mode)}
           <span class="gh-place">${medal}</span>
           <span class="gh-score">${g.totalScore.toLocaleString()} pts</span>
           <span class="gh-elo">${eloBadgeHtml}</span>
-          <span class="gh-chevron">▼</span>
+          <span class="gh-chevron">\u25bc</span>
         </div>
         <div class="gh-body" hidden>
           <div class="gh-details">
-            <span>👥 ${g.players} игроков</span>
-            <span>🔄 ${g.rounds} раундов</span>
+            <span>\ud83d\udc65 ${g.players} \u0438\u0433\u0440\u043e\u043a\u043e\u0432</span>
+            <span>\ud83d\udd04 ${g.rounds} \u0440\u0430\u0443\u043d\u0434\u043e\u0432</span>
           </div>
-          ${opponents ? `<div class="gh-opponents">${opponents}</div>` : '<p class="gh-no-opponents">Соло-игра</p>'}
+          ${playersHtml}
+          ${roundsHtml}
         </div>
       </div>`;
     }).join('');
@@ -254,7 +451,7 @@
         const open = !body.hidden;
         body.hidden = open;
         card.classList.toggle('gh-open', !open);
-        if (chevron) chevron.textContent = open ? '▼' : '▲';
+        if (chevron) chevron.textContent = open ? '\u25bc' : '\u25b2';
       };
       header.addEventListener('click', toggle);
       header.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') toggle(); });
@@ -319,6 +516,12 @@
       }
       const prof = await resp.json();
       renderProfile(prof);
+
+      /* Banner picker (only own profile) */
+      const myNick = Player.getNickname();
+      if (myNick && myNick.toLowerCase() === prof.nickname.toLowerCase()) {
+        initBannerPicker(prof.banner || null, prof.nickname);
+      }
     } catch (err) {
       console.error('Profile load error:', err);
     }

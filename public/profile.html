@@ -13,8 +13,14 @@
   <link rel="stylesheet" href="/css/components.css" />
   <link rel="stylesheet" href="/css/animations.css" />
   <link rel="stylesheet" href="/css/profile.css" />
+  <!-- Profile page: allow scroll and set correct base bg -->
+  <style>
+    html, body { overflow-y: auto !important; overflow-x: hidden; }
+  </style>
 </head>
-<body>
+<body style="background: var(--bg-primary)">
+  <!-- ── Full-page GIF background (blurred, dimmed) ────────── -->
+  <div class="profile-bg-banner" id="profile-bg-banner"></div>
 
   <div class="profile-page">
 
@@ -23,6 +29,7 @@
 
     <!-- ── Header: avatar + nick + level bar ──────────────── -->
     <div class="profile-header-card">
+      <div class="profile-banner-bg" id="profile-card-banner"></div>
       <div class="profile-avatar" id="profile-avatar">?</div>
       <div class="profile-info">
         <div class="profile-nickname-row">
@@ -45,6 +52,8 @@
           <span id="meta-total-xp">0 XP всего</span>          <span class="meta-sep">&middot;</span>
           <span id="meta-elo">1000 ЭЛО</span>        </div>
       </div>
+      <!-- Edit banner button (only visible to profile owner) -->
+      <button id="btn-edit-banner" class="btn-edit-banner hidden" title="Сменить фон">🖼️</button>
     </div>
 
     <!-- ── Tabs ───────────────────────────────────────────── -->
@@ -130,6 +139,21 @@
       <h2>Профиль не найден</h2>
       <p>Игрок ещё не сыграл ни одного матча.</p>
       <a href="/menu" class="btn btn-primary">На главную</a>
+    </div>
+    <!-- ── Banner picker modal ──────────────────────────────────── -->
+    <div class="banner-modal-overlay hidden" id="banner-modal-overlay">
+      <div class="banner-modal" role="dialog" aria-modal="true">
+        <button class="xp-modal-close" id="banner-modal-close" aria-label="Закрыть">✕</button>
+        <h2>🖼️ Выбор фона профиля</h2>
+        <p class="modal-subtitle">Фон отображается в шапке профиля, в списке игроков и на экране результатов.</p>
+        <div class="banner-grid" id="banner-grid">
+          <!-- populated by JS -->
+        </div>
+        <div class="banner-modal-actions">
+          <button id="btn-banner-remove" class="btn btn-outline">Убрать фон</button>
+          <button id="btn-banner-save" class="btn btn-primary" disabled>Сохранить</button>
+        </div>
+      </div>
     </div>
     <!-- ── XP / Rules info modal ─────────────────────────────────── -->
     <div class="xp-modal-overlay hidden" id="xp-modal-overlay">

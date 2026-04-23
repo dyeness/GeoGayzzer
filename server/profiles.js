@@ -197,6 +197,7 @@ function initProfile(nickname) {
       totalXp:     0,
       gamesPlayed: 0,
       roundsPlayed: 0,
+      banner:      null,
       records: {
         bestTotalScore:   0,
         bestRoundScore:   0,
@@ -380,9 +381,11 @@ function updateAfterGame(gameResults) {
       placement:  r.matchPlacement,
       players:    r.playerCount,
       rounds:     r.rounds,
+      mode:       r.mode || (r.playerCount > 1 ? 'standard' : 'solo'),
       eloDelta,
       newElo:     prof.elo,
-      opponents:  (r.allPlayers || []).filter(p => p.nickname !== r.nickname),
+      allPlayers: r.allPlayers || [],
+      roundsData: r.roundsData || [],
     };
     prof.lastGame = gameEntry;
     if (!prof.gameHistory) prof.gameHistory = [];
@@ -451,12 +454,22 @@ function getProfile(nickname) {
   return { ...prof, level, currentXp, xpNeeded, prestige };
 }
 
+/** Set banner gif for a profile. bannerKey must be one of the allowed keys. */
+function setProfileBanner(nickname, bannerKey) {
+  const key = nickname.trim().toLowerCase();
+  const prof = profiles[key];
+  if (!prof) return false;
+  prof.banner = bannerKey || null;
+  saveProfiles();
+  return true;
+}
+
 /** Returns a lightweight list for the leaderboard (nickname + level + totalXp). */
 function getAllProfiles() {
   return Object.values(profiles).map(p => {
     const { level } = getLevelInfo(p.totalXp);
     const prestige  = getPrestige(level);
-    return { nickname: p.nickname, level, totalXp: p.totalXp, gamesPlayed: p.gamesPlayed, prestige, elo: p.elo ?? 1000 };
+    return { nickname: p.nickname, level, totalXp: p.totalXp, gamesPlayed: p.gamesPlayed, prestige, elo: p.elo ?? 1000, banner: p.banner ?? null };
   }).sort((a, b) => b.totalXp - a.totalXp);
 }
 
@@ -555,4 +568,4 @@ if (process.stdin.isTTY) {
   });
 }
 
-module.exports = { getProfile, getAllProfiles, getAchievementDefs, updateAfterRound, updateAfterGame, initProfile, getLevelInfo, adminCmd };
+module.exports = { getProfile, getAllProfiles, getAchievementDefs, updateAfterRound, updateAfterGame, initProfile, getLevelInfo, setProfileBanner, adminCmd };
