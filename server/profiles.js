@@ -57,43 +57,34 @@ const MAX_ROUND_SCORE = 5000;
 
 /** XP required to advance FROM level N to N+1 */
 function xpForLevel(n) {
-  // Мягкий рост: 350 * n^1.2 вместо 200 * n^1.5
+  // Мягкий рост: 150 * n^1.1
   return Math.floor(150 * Math.pow(n, 1.1));
 }
 
 /**
- * Given total accumulated XP, return { level, currentXp, xpNeeded }.
- * Level 1 = start, no upper cap.
+ * Given total accumulated XP, return { level, currentXp, xpNeeded, prestige }.
+ * Уровень и требуемый опыт обнуляются каждые 55 уровней, выдается престиж.
+ * totalXp при этом остается нетронутым.
  */
 function getLevelInfo(totalXp) {
-  let level  = 1;
+  let level = 1;
+  let prestige = 0;
   let xpSpent = 0;
+
   for (;;) {
     const needed = xpForLevel(level);
     if (xpSpent + needed > totalXp) {
-      return { level, currentXp: totalXp - xpSpent, xpNeeded: needed };
+      return { level, currentXp: totalXp - xpSpent, xpNeeded: needed, prestige };
     }
     xpSpent += needed;
     level++;
-  }
-}
-
-/**
- * Prestige: every 55 levels gives +1 prestige.
- * After prestige, level resets to 1 (totalXp is zeroed in the profile).
- */
-function getPrestige(level) {
-  return Math.floor(level / 55);
-}
-
-/**
- * After adding XP, check if level reached 55 — if so, prestige up and reset totalXp.
- */
-function checkAndApplyPrestige(prof) {
-  const { level } = getLevelInfo(prof.totalXp);
-  if (level >= 55) {
-    prof.prestige  = (prof.prestige || 0) + 1;
-    prof.totalXp   = 0;
+    
+    // Как только уровень превышает 55, выдаем престиж и сбрасываем уровень на 1.
+    // Кривая требуемого опыта для следующего уровня снова начинается как для 1-го.
+    if (level > 55) {
+      level = 1;
+      prestige++;
+    }
   }
 }
 
@@ -210,7 +201,6 @@ function initProfile(nickname) {
     profiles[key] = {
       nickname:    nickname.trim(),
       totalXp:     0,
-      prestige:    0,
       gamesPlayed: 0,
       roundsPlayed: 0,
       banner:      null,
@@ -260,8 +250,8 @@ function hasEverEarned(profile, id) {
 
 /**
  * roundResults: Array of {
- *   nickname, score, distance, stolen,
- *   roundPlacement, playerCount
+ * nickname, score, distance, stolen,
+ * roundPlacement, playerCount
  * }
  * (already sorted best → worst so roundPlacement = index + 1)
  */
@@ -281,7 +271,6 @@ function updateAfterRound(roundResults) {
 
     // XP (new expanded formula)
     prof.totalXp      += calcRoundXp(r.score, r.distance, r.stolen || 0, r.roundPlacement, r.playerCount, r.isSolo === true);
-    checkAndApplyPrestige(prof);
     prof.roundsPlayed += 1;
 
     // Records
@@ -353,7 +342,7 @@ function calcEloChanges(players) {
 
 /**
  * gameResults: Array of {
- *   nickname, totalScore, matchPlacement, playerCount, rounds
+ * nickname, totalScore, matchPlacement, playerCount, rounds
  * }
  */
 function updateAfterGame(gameResults) {
@@ -380,7 +369,6 @@ function updateAfterGame(gameResults) {
 
     // XP (expanded formula with bonus params)
     prof.totalXp     += calcMatchXp(r.matchPlacement, r.playerCount, allRounds90, bigOpponents, r.mode === 'solo');
-    checkAndApplyPrestige(prof);
     prof.gamesPlayed += 1;
 
     // ELO (multiplayer only, floor at 100)
@@ -467,8 +455,7 @@ function getProfile(nickname) {
   const key  = nickname.trim().toLowerCase();
   const prof = profiles[key];
   if (!prof) return null;
-  const { level, currentXp, xpNeeded } = getLevelInfo(prof.totalXp);
-  const prestige = prof.prestige ?? 0;
+  const { level, currentXp, xpNeeded, prestige } = getLevelInfo(prof.totalXp);
   return { ...prof, level, currentXp, xpNeeded, prestige };
 }
 
@@ -485,8 +472,7 @@ function setProfileBanner(nickname, bannerKey) {
 /** Returns a lightweight list for the leaderboard (nickname + level + totalXp). */
 function getAllProfiles() {
   return Object.values(profiles).map(p => {
-    const { level } = getLevelInfo(p.totalXp);
-    const prestige  = p.prestige ?? 0;
+    const { level, prestige } = getLevelInfo(p.totalXp);
     return { nickname: p.nickname, level, totalXp: p.totalXp, gamesPlayed: p.gamesPlayed, prestige, elo: p.elo ?? 1000, banner: p.banner ?? null };
   }).sort((a, b) => b.totalXp - a.totalXp);
 }
